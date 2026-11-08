@@ -301,19 +301,19 @@ end
 
 -- / theme (white) \ --
 local Theme = {
-	Accent = Color3.fromRGB(40, 40, 40),
-	bg = Color3.fromRGB(252, 252, 253),
-	panel = Color3.fromRGB(255, 255, 255),
-	raised = Color3.fromRGB(246, 246, 248),
-	hover = Color3.fromRGB(238, 238, 241),
-	line = Color3.fromRGB(228, 228, 232),
-	text = Color3.fromRGB(28, 28, 32),
-	sub = Color3.fromRGB(128, 128, 136),
-	dim = Color3.fromRGB(176, 176, 184),
-	onAccent = Color3.fromRGB(255, 255, 255),
-	good = Color3.fromRGB(70, 180, 110),
-	bad = Color3.fromRGB(226, 80, 80),
-	warn = Color3.fromRGB(230, 170, 60),
+	Accent = Color3.fromRGB(240, 240, 242),
+	bg = Color3.fromRGB(11, 11, 13),
+	panel = Color3.fromRGB(17, 17, 20),
+	raised = Color3.fromRGB(23, 23, 27),
+	hover = Color3.fromRGB(32, 32, 37),
+	line = Color3.fromRGB(38, 38, 44),
+	text = Color3.fromRGB(238, 238, 242),
+	sub = Color3.fromRGB(140, 140, 150),
+	dim = Color3.fromRGB(90, 90, 98),
+	onAccent = Color3.fromRGB(14, 14, 16),
+	good = Color3.fromRGB(90, 200, 130),
+	bad = Color3.fromRGB(235, 90, 90),
+	warn = Color3.fromRGB(235, 180, 70),
 }
 local FONT = Enum.Font.GothamMedium
 local BOLD = Enum.Font.GothamBold
@@ -359,7 +359,7 @@ local function round(n, decimals)
 end
 
 -- / library \ --
-local Feather = {Theme = Theme, ToggleKey = Enum.KeyCode.RightShift, Flags = {}, _windows = {}, _notifs = nil}
+local Feather = {Theme = Theme, ToggleKey = Enum.KeyCode.RightShift, Flags = {}, _windows = {}, _notifs = nil, OnUnload = false, Unload = function(_self) end}
 
 local function hudParent(gui)
 	local ok = pcall(function() gui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
@@ -448,87 +448,188 @@ end
 Feather._accentHooks = {}
 
 -- / window \ --
-local function makeDraggable(handle, target)
-	local dragging, startInput, startPos, goal, step
+local GLOW_B64 = "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"
+local BLOB_B64 = "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAFmklEQVR42u1b2ZLjNgwEKXqOrc3/f+qMLZHIi1SF9AIgKFOzSWZdpRJ9SFY3ToJgYmb6zq9M3/xVvvj/UvB3/H8hIHXAJwNwgs/4v0RAMs4aCRYBDN9JQvjfSoAEnJzPPFNAqUvwl2hFuQC49t7TCo0ABhKQjGlElAngo4emCRYJFgHa8RQJZaLU0x5WtbGlCZ4G4NFgPCV6lIlSz51zjwQLfAP1b/u4zdCGMgF8BrDae/lbyxQkCJR226+V4JP47rQmlCfAW8AzES0GCbnjB1DqDcZVXN/Ec2lE8EwCLPAaaBxnRRM8DUDJy0OCrUAEnSGhTAC/iLM11rRAS4Q06VcFcHWc6RAJoxrgAbcOiwSNAA38sp+P66UZWES0WRoQkf6y30cba2TkjglI8BXA544J4Tj1iCiD4JMi9SLORXmvEZANAM0gYNuPHEimGCKGawojGqBJH8HegAiPhAQSYgf8cc0WiCBsTKiGNCAqfQR/AyJuDgkWAQi+ZzpW+pwjplCCji8Ztr8AeDw0rYgQsCngczB8Zhg3ZSbpEpAG4j6q+gH8Bc6SiEXxA6j+GxGtgoSHYs9a3pCBAFacJkdNQPMBlndH8PJAIkqHgEP6ZQeuSd5KlpAQnHtwVAOok/JqPkAj4RXIOH6zGARUkHyGwq2XJco5QwJNsIoqvxCQOmaQjBxAqrgE/ypIeAXfIMFJ6a/7oYVLDbzMFOUzNgXDLySUAfX3ssCiOENJwhtog/QFBLb/ANUnJzWWmeKiJE1dMygn5vy5Ew4LqP2bOCQJGgEPQY4FvkCIXBTw1vN3fYBVyR0hwdKAdyDhBgSsYB5WdNgU8JEZp6oFpVPOtub/yZkToFN8ARLeBQmSgAcR3Q2zWI3MMjvPZVWh/uEHyoka/2hyJJ3iOxH92M8v4v8P218E+E2Av+1nT+p5sAId8gGRAmgOJEoWCbf93isRfezjKiLBQ0mecgd8ZF3idD2g5x+8KbPUhnci+rmbBRHRp9CEF5ErLIGqUuoszgzVA6IXpgARlnYc5vFGRH+Je9whP8gBr372ufnP8rihARysprKxjhcpbB6O7VNc/ylS4NbJ8dn5/9HnDvsAa+EhAroKx3ZkeR9C7aUTPL5fxXURMqzFldNlcQ4sVLbOxEQmLo/d7u8i1G1KGPzYf3MQcVxfnf/hwCoRny2JWTdqgRoehjKZ4VUnEUISVmEe1dAMJIGiS2VFaUrgzkIFO+A3OFaR4GhpL352kPApSFiV+1oksGMqKinF6Mzg4IpNNSRvVX6kE7QmQ0jCvaMJteMjyNOIEqiwjoBfhD1rVZ8Kaa83HT5IeCg+YZSEIR+AnRiWZ1+M6q1X85Ma0iuI3AURUgNWwxR6ESNUFdbAs7Nml6Fun40CZgPbj5TEHqANUgtWxx9wJ1zyqAY0KDM1KD5sndI1FjPWYFF0FZLXIsLmRAbNGQ6tC1hmUI08f+tUbquI+6NlcSTCc4aSiFDnSAn26TRoTEAykkGAlPx2YmEEiVidsNgGs8ZuIsRKT04ywFOndI01vJGlMSRheyI5GkqFcd1ea05IHeIs8KOLo5uhFZuj/u1sGLSIaAC8OtdoIXPG8nhVVH8LhsDh/gBWHi45PXqWJGc0SCAZ2nhY+mcmQ83p9/UyxmdaZDwyolPmp3uEuNOA1ANfJzVJWWOLgCltctzpwkIAGZar68Q2uWqMT0n/jAZoJGBzQhbjKxolrYLIMPjRTlGNBIZlLGxMmNkqywPA+apeYTYaE7E1Rfb2zmqWts6nwZ/tFscuLFlrz0pDQqNr2uWn7Bs4u1/A+qOmNCNcvWGCf8eGiZ42XLVlhmjibpFZe4ZYmUYnaFR8ZtOUVd6esmkqXbB1dta2OU8r5j3sxXuHz26cpK/aOJm+ePP0t9s6+9uA0Z/d47HX3ya4ucJF+l37AAAAAElFTkSuQmCC"
+local LOGO_URL = "https://raw.githubusercontent.com/aIbums/opensrc/main/Minimalist%20White%20Feather%20Logo.png"
+local QUILL_TIP = Vector2.new(0.8935, 0.0225)
+local LOGO_ASPECT = 1774 / 887
+local WM_W, WM_H = 439, 156
+local GLOW_PAD = 40
+local WRITE_TRACE = {0.859, 0.835, 0.808, 0.762, 0.703, 0.633, 0.572, 0.515, 0.462, 0.413, 0.364, 0.304, 0.247, 0.201, 0.16, 0.128, 0.118, 0.11, 0.103, 0.097, 0.092, 0.088, 0.085, 0.082, 0.079, 0.078, 0.081, 0.203, 0.324, 0.453, 0.569, 0.672, 0.647, 0.618, 0.577, 0.545, 0.521, 0.505, 0.495, 0.492, 0.505, 0.532, 0.572, 0.568, 0.56, 0.539, 0.504, 0.449, 0.428, 0.401, 0.368, 0.333, 0.306, 0.313, 0.327, 0.377, 0.419, 0.449, 0.445, 0.429, 0.374, 0.321, 0.269, 0.223, 0.188, 0.269, 0.35, 0.435, 0.518, 0.596, 0.567, 0.544, 0.527, 0.515, 0.513, 0.546, 0.582, 0.631, 0.665, 0.687, 0.667, 0.638, 0.594, 0.563, 0.553, 0.547, 0.546, 0.545, 0.541, 0.528, 0.537, 0.551, 0.569, 0.59, 0.607, 0.609}
+
+local assetCache = {}
+
+local function b64Asset(name, data)
+	if assetCache[name] ~= nil then return assetCache[name] or nil end
+	assetCache[name] = false
+	if not hasAssets or data == "" then return nil end
+	ensureFolder()
+	local path = "Feather/" .. name
+	if not (isfile and isfile(path)) then pcall(writefile, path, B64.decode(data)) end
+	local ok, id = pcall(loadAsset, path)
+	if ok and id then assetCache[name] = id return id end
+	return nil
+end
+
+local function urlAsset(name, url)
+	if assetCache[name] ~= nil then return assetCache[name] or nil end
+	assetCache[name] = false
+	if not hasAssets then return nil end
+	ensureFolder()
+	local path = "Feather/" .. name
+	if not (isfile and isfile(path)) then
+		local ok, body = pcall(function() return game:HttpGet(url) end)
+		if not ok or type(body) ~= "string" or #body < 200 then return nil end
+		pcall(writefile, path, body)
+	end
+	local ok, id = pcall(loadAsset, path)
+	if ok and id then assetCache[name] = id return id end
+	return nil
+end
+
+local function getLogo() return urlAsset("logo.png", LOGO_URL) end
+
+local function traceAt(p)
+	local n = #WRITE_TRACE
+	if n == 0 then return 0.5 end
+	local f = math.clamp(p, 0, 1) * (n - 1) + 1
+	local i = math.floor(f)
+	local j = math.min(i + 1, n)
+	local t = f - i
+	return WRITE_TRACE[i] + (WRITE_TRACE[j] - WRITE_TRACE[i]) * t
+end
+
+local function inside(gui, pos)
+	if not (gui and gui.Parent and gui.Visible) then return false end
+	local p, s = gui.AbsolutePosition, gui.AbsoluteSize
+	return pos.X >= p.X and pos.X <= p.X + s.X and pos.Y >= p.Y and pos.Y <= p.Y + s.Y
+end
+
+local function makeDraggable(handle, target, onStart)
+	local dragging, startMouse, startPos, goal, step
 	handle.InputBegan:Connect(function(input)
 		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
 		dragging = true
-		startInput = input.Position
+		startMouse = UserInputService:GetMouseLocation()
 		startPos = target.Position
 		goal = startPos
+		if onStart then onStart() end
 		if not step then
 			step = RunService.RenderStepped:Connect(function(dt)
 				if not target.Parent then step:Disconnect() step = nil return end
 				if dragging then
-					local m = UserInputService:GetMouseLocation()
-					local delta = Vector2.new(m.X, m.Y) - startInput
-					if input.UserInputType == Enum.UserInputType.Touch then delta = input.Position - startInput end
+					local delta = UserInputService:GetMouseLocation() - startMouse
 					goal = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 				end
 				local cur = target.Position
 				local a = 1 - math.exp(-math.min(dt, 0.1) * 20)
-				target.Position = UDim2.new(goal.X.Scale, cur.X.Offset + (goal.X.Offset - cur.X.Offset) * a, goal.Y.Scale, cur.Y.Offset + (goal.Y.Offset - cur.Y.Offset) * a)
+				local nx = cur.X.Offset + (goal.X.Offset - cur.X.Offset) * a
+				local ny = cur.Y.Offset + (goal.Y.Offset - cur.Y.Offset) * a
+				target.Position = UDim2.new(goal.X.Scale, nx, goal.Y.Scale, ny)
+				if not dragging and math.abs(goal.X.Offset - nx) < 0.5 and math.abs(goal.Y.Offset - ny) < 0.5 then
+					target.Position = goal
+					step:Disconnect()
+					step = nil
+				end
 			end)
 		end
-		startInput = UserInputService:GetMouseLocation()
-		if input.UserInputType == Enum.UserInputType.Touch then startInput = input.Position end
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then dragging = false end
 		end)
 	end)
 end
 
-local W, H = 430, 480
+local W, H, HEAD = 440, 500, 54
 
 function Feather:CreateWindow(opts)
 	opts = opts or {}
 	if opts.Accent then Theme.Accent = opts.Accent end
 	local gui = new("ScreenGui", {Name = HttpService:GenerateGUID(false), ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling})
 	hudParent(gui)
+	local conns = {}
+	local function track(c) table.insert(conns, c) return c end
 
 	local root = new("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 0), Size = UDim2.fromOffset(W, H), BackgroundTransparency = 1, Visible = false, Parent = gui})
-	local shellScale = new("UIScale", {Scale = 0.96, Parent = root})
+	local rootScale = new("UIScale", {Scale = 0.96, Parent = root})
 	local panel = new("CanvasGroup", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.bg, GroupTransparency = 1, Parent = root}, {corner(16), stroke(Theme.line, 0)})
 
-	-- header
-	local header = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 52), Parent = panel})
-	local wm = getWordmark()
-	if wm then
-		new("ImageLabel", {BackgroundTransparency = 1, Image = wm, ImageColor3 = Theme.text, ScaleType = Enum.ScaleType.Fit, Position = UDim2.fromOffset(18, 14), Size = UDim2.fromOffset(84, 30), Parent = header})
-	else
-		label({Text = opts.Name or "Feather", Font = BOLD, TextSize = 17, Position = UDim2.fromOffset(18, 0), Size = UDim2.new(0, 160, 1, 0), Parent = header})
+	-- popups live above everything so cards and scrolling never cut them off
+	local overlay = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 200, Parent = gui})
+	local openPopup
+	local function closePopup()
+		if not openPopup then return end
+		local p = openPopup
+		openPopup = nil
+		p.frame.Visible = false
+		if p.onClose then p.onClose() end
 	end
-	local titleLabel = label({Text = opts.Title or "", TextSize = 12, TextColor3 = Theme.sub, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -86, 0.5, 0), Size = UDim2.fromOffset(180, 16), Parent = header})
-	new("Frame", {BackgroundColor3 = Theme.line, Size = UDim2.new(1, -36, 0, 1), Position = UDim2.new(0, 18, 1, -1), BorderSizePixel = 0, Parent = header})
+	local function showPopup(frame, anchor, width, onClose)
+		if openPopup and openPopup.frame == frame then closePopup() return end
+		closePopup()
+		frame.Parent = overlay
+		local ap, as = anchor.AbsolutePosition, anchor.AbsoluteSize
+		frame.Position = UDim2.fromOffset(ap.X + as.X - width, ap.Y + as.Y + 6)
+		frame.Visible = true
+		openPopup = {frame = frame, anchor = anchor, onClose = onClose}
+		local sc = frame:FindFirstChild("PopScale") or new("UIScale", {Name = "PopScale", Parent = frame})
+		sc.Scale = 0.94
+		go(sc, 0.2, {Scale = 1}, Enum.EasingStyle.Back)
+	end
+	track(UserInputService.InputBegan:Connect(function(input)
+		if not openPopup then return end
+		if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+		local pos = UserInputService:GetMouseLocation()
+		if not (inside(openPopup.frame, pos) or inside(openPopup.anchor, pos)) then closePopup() end
+	end))
+
+	-- header
+	local header = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, HEAD), Parent = panel})
+	local brand = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(16, 0), Size = UDim2.new(0, 200, 1, 0), Parent = header}, {new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder})})
+	local headLogo = new("ImageLabel", {BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(34, 17), LayoutOrder = 1, Visible = false, Parent = brand})
+	local headWord = new("ImageLabel", {BackgroundTransparency = 1, ScaleType = Enum.ScaleType.Fit, ImageColor3 = Theme.text, Size = UDim2.fromOffset(86, 31), LayoutOrder = 2, Visible = false, Parent = brand})
+	local headText = label({Text = opts.Name or "Feather", Font = BOLD, TextSize = 17, Size = UDim2.fromOffset(120, 30), LayoutOrder = 2, Parent = brand})
+	task.spawn(function()
+		local wm = getWordmark()
+		if wm and headWord.Parent then headWord.Image = wm headWord.Visible = true headText.Visible = false end
+		local logo = getLogo()
+		if logo and headLogo.Parent then headLogo.Image = logo headLogo.Visible = true end
+	end)
+	local titleLabel = label({Text = opts.Title or "", TextSize = 12, TextColor3 = Theme.sub, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -90, 0.5, 0), Size = UDim2.fromOffset(150, 16), TextTruncate = Enum.TextTruncate.AtEnd, Parent = header})
+	local headLine = new("Frame", {BackgroundColor3 = Theme.line, Size = UDim2.new(1, -32, 0, 1), Position = UDim2.new(0, 16, 1, -1), BorderSizePixel = 0, Parent = header})
 
 	local function headerButton(x, icon)
-		local b = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, x, 0.5, 0), Size = UDim2.fromOffset(28, 28), Parent = header}, {corner(8), stroke(Theme.line, 0.1)})
-		makeIcon(b, icon, 15, Theme.sub).Position = UDim2.fromOffset(6.5, 6.5)
-		b.MouseEnter:Connect(function() go(b, 0.15, {BackgroundColor3 = Theme.hover}) end)
-		b.MouseLeave:Connect(function() go(b, 0.2, {BackgroundColor3 = Theme.raised}) end)
+		local b = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, x, 0.5, 0), Size = UDim2.fromOffset(30, 30), Parent = header}, {corner(9), stroke(Theme.line, 0)})
+		local img = makeIcon(b, icon, 15, Theme.sub)
+		img.AnchorPoint = Vector2.new(0.5, 0.5)
+		img.Position = UDim2.fromScale(0.5, 0.5)
+		b.MouseEnter:Connect(function() go(b, 0.15, {BackgroundColor3 = Theme.hover}) go(img, 0.15, {ImageColor3 = Theme.text}) end)
+		b.MouseLeave:Connect(function() go(b, 0.2, {BackgroundColor3 = Theme.raised}) go(img, 0.2, {ImageColor3 = Theme.sub}) end)
 		return b
 	end
 	local closeBtn = headerButton(-14, "x")
-	local minBtn = headerButton(-48, "minus")
+	local minBtn = headerButton(-50, "minus")
 
-	-- body (holds the active tab's page pills + page content)
-	local body = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, 0, 1, -52 - 62), Parent = panel})
+	local body = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, HEAD), Size = UDim2.new(1, 0, 1, -HEAD - 64), Parent = panel})
 
-	-- bottom tab bar
-	local tabbar = new("Frame", {BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(1, -24, 0, 44), Parent = panel}, {corner(14)})
-	new("Frame", {BackgroundColor3 = Theme.raised, Size = UDim2.fromScale(1, 1), BorderSizePixel = 0, Parent = tabbar}, {corner(14), stroke(Theme.line, 0.2)})
-	local tabRow = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = tabbar}, {new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6)})})
+	local tabbar = new("Frame", {BackgroundColor3 = Theme.panel, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(1, -24, 0, 46), Parent = panel}, {corner(15), stroke(Theme.line, 0)})
+	local tabRow = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = tabbar}, {new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder})})
 
 	local Window = {tabs = {}, _active = nil}
 
 	local function selectTab(tab)
 		if Window._active == tab then return end
+		closePopup()
 		for _, t in ipairs(Window.tabs) do
 			local on = t == tab
-			t.host.Visible = on
-			go(t.pill, 0.2, {BackgroundTransparency = on and 0 or 1})
-			t._icon.ImageColor3 = on and Theme.onAccent or Theme.sub
-			if t._text then t._text.TextColor3 = on and Theme.onAccent or Theme.sub end
+			if on then
+				t.host.Visible = true
+				t.host.Position = UDim2.fromOffset(0, 10)
+				go(t.host, 0.3, {Position = UDim2.fromOffset(0, 0)})
+			else
+				t.host.Visible = false
+			end
+			go(t.pill, 0.22, {BackgroundTransparency = on and 0 or 1})
+			go(t._icon, 0.22, {ImageColor3 = on and Theme.onAccent or Theme.sub})
 		end
 		Window._active = tab
 	end
@@ -536,139 +637,169 @@ function Feather:CreateWindow(opts)
 	function Window:Tab(tabOpts)
 		tabOpts = tabOpts or {}
 		local host = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = body})
-		local pillRow = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, -36, 0, 30), Position = UDim2.fromOffset(18, 6), Parent = host}, {new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center})})
-		local pageHost = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 1, -40), Parent = host})
+		local pillRow = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, -32, 0, 30), Position = UDim2.fromOffset(16, 10), Visible = false, Parent = host}, {new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder})})
+		local pageHost = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 10), Size = UDim2.new(1, 0, 1, -10), Parent = host})
 
-		local pill = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.Accent, BackgroundTransparency = 1, Size = UDim2.fromOffset(44, 34), Parent = tabRow}, {corner(10)})
+		local pill = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.Accent, BackgroundTransparency = 1, Size = UDim2.fromOffset(46, 34), LayoutOrder = #Window.tabs + 1, Parent = tabRow}, {corner(11)})
 		local iconImg = makeIcon(pill, tabOpts.Icon or "circle", 18, Theme.sub)
 		iconImg.AnchorPoint = Vector2.new(0.5, 0.5)
 		iconImg.Position = UDim2.fromScale(0.5, 0.5)
-
-		local tab = {host = host, pill = pill, _icon = iconImg, pages = {}, _pageHost = pageHost, _pillRow = pillRow, _activePage = nil}
-		Feather._accentHooks[#Feather._accentHooks + 1] = function(c) pill.BackgroundColor3 = c end
+		local tab ={host = host, pill = pill, _icon = iconImg, pages = {}, _activePage = nil}
+		pill.MouseLeave:Connect(function() if Window._active ~= tab then go(iconImg, 0.2, {ImageColor3 = Theme.sub}) end end)
+		pill.MouseEnter:Connect(function() if Window._active ~= tab then go(iconImg, 0.15, {ImageColor3 = Theme.text}) end end)
+		table.insert(Feather._accentHooks, function(c) pill.BackgroundColor3 = c end)
 
 		local function selectPage(page)
 			if tab._activePage == page then return end
+			closePopup()
 			for _, p in ipairs(tab.pages) do
 				local on = p == page
 				p.scroller.Visible = on
-				go(p._pill, 0.2, {BackgroundColor3 = on and Theme.raised or Theme.panel})
-				p._label.TextColor3 = on and Theme.text or Theme.sub
+				go(p._pill, 0.2, {BackgroundColor3 = on and Theme.hover or Theme.raised})
+				go(p._label, 0.2, {TextColor3 = on and Theme.text or Theme.sub})
+				if p._icon then go(p._icon, 0.2, {ImageColor3 = on and Theme.text or Theme.sub}) end
 			end
 			tab._activePage = page
 		end
 
 		function tab:Page(pageOpts)
 			pageOpts = pageOpts or {}
-			local scroller = new("ScrollingFrame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.dim, ScrollBarImageTransparency = 0.3, ScrollingDirection = Enum.ScrollingDirection.Y, Visible = false, Parent = pageHost}, {new("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 14)})})
+			local scroller = new("ScrollingFrame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.dim, ScrollBarImageTransparency = 0.2, ScrollingDirection = Enum.ScrollingDirection.Y, Visible = false, Parent = pageHost}, {new("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 14)})})
+			track(scroller:GetPropertyChangedSignal("CanvasPosition"):Connect(closePopup))
 
-			local pillBtn = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.panel, Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X, Parent = pillRow}, {corner(9), stroke(Theme.line, 0.3), new("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}), new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center})})
+			local pillBtn = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X, LayoutOrder = #tab.pages + 1, Parent = pillRow}, {corner(9), new("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 11)}), new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder})})
+			local pageIcon
 			if pageOpts.Icon then
-				local pi = makeIcon(pillBtn, pageOpts.Icon, 14, Theme.sub)
-				pi.LayoutOrder = 1
+				pageIcon = makeIcon(pillBtn, pageOpts.Icon, 14, Theme.sub)
+				pageIcon.LayoutOrder = 1
 			end
 			local pl = label({Text = pageOpts.Name or "Page", Font = BOLD, TextSize = 12, TextColor3 = Theme.sub, Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X, LayoutOrder = 2, Parent = pillBtn})
 
-			local page = {scroller = scroller, _pill = pillBtn, _label = pl}
+			local page = {scroller = scroller, _pill = pillBtn, _label = pl, _icon = pageIcon}
 			table.insert(tab.pages, page)
 			pillBtn.MouseButton1Click:Connect(function() selectPage(page) end)
-			pillRow.Visible = #tab.pages > 1
+			if #tab.pages > 1 then
+				pillRow.Visible = true
+				pageHost.Position = UDim2.fromOffset(0, 48)
+				pageHost.Size = UDim2.new(1, 0, 1, -48)
+			end
 
-			-- group / section
 			local function addGroup(name)
-				local card = new("Frame", {BackgroundColor3 = Theme.panel, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = #scroller:GetChildren(), Parent = scroller}, {corner(12), stroke(Theme.line, 0.2)})
-				local inner = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = card}, {new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12)})})
+				local card = new("Frame", {BackgroundColor3 = Theme.panel, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = #scroller:GetChildren(), Parent = scroller}, {corner(12), stroke(Theme.line, 0)})
+				local inner = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = card}, {new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14)})})
 				if name and name ~= "" then
-					label({Text = string.upper(name), Font = BOLD, TextSize = 10, TextColor3 = Theme.sub, Size = UDim2.new(1, 0, 0, 16), LayoutOrder = 0, Parent = inner})
+					label({Text = name, Font = BOLD, TextSize = 12, TextColor3 = Theme.sub, Size = UDim2.new(1, 0, 0, 20), LayoutOrder = 0, Parent = inner})
 				end
 
 				local Group = {}
 				local order = 1
-				local function baseRow(o)
+				local function baseRow(o, height)
 					o = o or {}
-					local row = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38), LayoutOrder = order, Parent = inner})
+					local row = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, height or 40), LayoutOrder = order, Parent = inner})
 					order += 1
 					local leftX = 0
 					if o.Icon then
-						makeIcon(row, o.Icon, 17, Theme.sub).Position = UDim2.fromOffset(0, 10)
+						local ic = makeIcon(row, o.Icon, 16, Theme.sub)
+						ic.AnchorPoint = Vector2.new(0, 0.5)
+						ic.Position = UDim2.new(0, 0, 0, 20)
 						leftX = 26
 					end
-					local tHeight = (o.Description and o.Description ~= "") and 15 or 38
-					label({Text = o.Name or "", Font = BOLD, TextSize = 13, Position = UDim2.fromOffset(leftX, o.Description and 5 or 0), Size = UDim2.new(1, leftX + 120, 0, tHeight), Parent = row})
-					if o.Description and o.Description ~= "" then
-						label({Text = o.Description, TextSize = 11, TextColor3 = Theme.sub, Position = UDim2.fromOffset(leftX, 21), Size = UDim2.new(1, -(leftX + 120), 0, 13), Parent = row})
+					local hasDesc = o.Description and o.Description ~= ""
+					label({Text = o.Name or "", Font = BOLD, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(leftX, hasDesc and 5 or 0), Size = UDim2.new(1, -(leftX + 140), 0, hasDesc and 16 or 40), Parent = row})
+					if hasDesc then
+						label({Text = o.Description, TextSize = 11, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(leftX, 22), Size = UDim2.new(1, -(leftX + 140), 0, 13), Parent = row})
 					end
 					return row
 				end
 
 				function Group:Toggle(o)
 					local row = baseRow(o)
-					local state = o.Default or false
-					local track = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.line, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(40, 22), Parent = row}, {corner(11)})
-					local knob = new("Frame", {BackgroundColor3 = Theme.panel, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(3, 11), Size = UDim2.fromOffset(16, 16), Parent = track}, {corner(8)})
+					local state = o.Default and true or false
+					local track_ = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.line, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(40, 22), Parent = row}, {corner(11)})
+					local knob = new("Frame", {BackgroundColor3 = Theme.sub, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromOffset(3, 11), Size = UDim2.fromOffset(16, 16), Parent = track_}, {corner(8)})
 					local control = {}
-					local function apply(v, fire)
+					local function apply(v, fire, instant)
 						state = v and true or false
-						go(track, 0.2, {BackgroundColor3 = state and Theme.Accent or Theme.line})
-						go(knob, 0.2, {Position = UDim2.fromOffset(state and 21 or 3, 11)}, Enum.EasingStyle.Back)
+						local t = instant and 0 or 0.22
+						go(track_, t, {BackgroundColor3 = state and Theme.Accent or Theme.line})
+						go(knob, t, {Position = UDim2.fromOffset(state and 21 or 3, 11), BackgroundColor3 = state and Theme.bg or Theme.sub}, Enum.EasingStyle.Back)
 						if fire and o.Callback then task.spawn(o.Callback, state) end
 					end
-					track.MouseButton1Click:Connect(function() apply(not state, true) end)
+					track_.MouseButton1Click:Connect(function() apply(not state, true) end)
 					function control:Set(v) apply(v, true) end
 					function control:Get() return state end
-					apply(state, false)
-					if o.Flag then Feather.Flags[o.Flag] = {value = state, get = function() return state end, set = function(v) apply(v, true) end} end
-					if o.Default then task.defer(function() if o.Callback then o.Callback(true) end end) end
+					apply(state, false, true)
+					table.insert(Feather._accentHooks, function() apply(state, false, true) end)
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return state end, set = function(v) apply(v, true) end} end
+					if state and o.Callback then task.defer(o.Callback, true) end
 					return control
 				end
 
 				function Group:Slider(o)
-					local row = baseRow(o)
-					row.Size = UDim2.new(1, 0, 0, 46)
+					local row = baseRow({Name = o.Name, Icon = o.Icon}, 50)
 					local dec = o.Decimals or 0
 					local minV, maxV = o.Min or 0, o.Max or 100
 					local value = o.Default or minV
-					local valLabel = label({Text = "", TextSize = 12, TextColor3 = Theme.sub, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(90, 15), Parent = row})
-					local bar = new("Frame", {BackgroundColor3 = Theme.line, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -6), Size = UDim2.new(1, 0, 0, 6), Parent = row}, {corner(3)})
+					local valLabel = label({Text = "", Font = BOLD, TextSize = 12, TextColor3 = Theme.sub, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(100, 30), Parent = row})
+					local bar = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.line, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -8), Size = UDim2.new(1, 0, 0, 6), Parent = row}, {corner(3)})
 					local fill = new("Frame", {BackgroundColor3 = Theme.Accent, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0, Parent = bar}, {corner(3)})
+					local dot = new("Frame", {BackgroundColor3 = Theme.Accent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.fromOffset(12, 12), Parent = bar}, {corner(6)})
+					table.insert(Feather._accentHooks, function(c) fill.BackgroundColor3 = c dot.BackgroundColor3 = c end)
 					local control, dragging = {}, false
 					local function apply(v, fire)
 						value = math.clamp(round(v, dec), minV, maxV)
 						local frac = (value - minV) / math.max(maxV - minV, 1e-6)
 						fill.Size = UDim2.fromScale(frac, 1)
+						dot.Position = UDim2.fromScale(frac, 0.5)
 						valLabel.Text = tostring(value) .. (o.Suffix or "")
 						if fire and o.Callback then task.spawn(o.Callback, value) end
 					end
-					local function fromX(px)
-						local frac = math.clamp((px - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
+					local function fromMouse()
+						local m = UserInputService:GetMouseLocation()
+						local frac = math.clamp((m.X - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
 						apply(minV + frac * (maxV - minV), true)
 					end
-					bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = true fromX(i.Position.X) end end)
-					UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromX(i.Position.X) end end)
-					UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then dragging = false end end)
+					bar.InputBegan:Connect(function(i)
+						if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+							dragging = true
+							go(dot, 0.15, {Size = UDim2.fromOffset(15, 15)})
+							fromMouse()
+						end
+					end)
+					track(UserInputService.InputChanged:Connect(function(i) if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then fromMouse() end end))
+					track(UserInputService.InputEnded:Connect(function(i)
+						if dragging and (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) then
+							dragging = false
+							go(dot, 0.2, {Size = UDim2.fromOffset(12, 12)})
+						end
+					end))
 					function control:Set(v) apply(v, true) end
 					function control:Get() return value end
 					apply(value, false)
-					if o.Flag then Feather.Flags[o.Flag] = {value = value, get = function() return value end, set = function(v) apply(v, true) end} end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return value end, set = function(v) apply(v, true) end} end
 					return control
 				end
 
 				function Group:Button(o)
 					local row = baseRow(o)
-					local btn = new("TextButton", {Text = o.ButtonText or "Run", Font = BOLD, TextSize = 12, TextColor3 = Theme.onAccent, AutoButtonColor = false, BackgroundColor3 = Theme.Accent, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(78, 28), Parent = row}, {corner(8)})
-					btn.MouseEnter:Connect(function() go(btn, 0.15, {BackgroundTransparency = 0.12}) end)
-					btn.MouseLeave:Connect(function() go(btn, 0.2, {BackgroundTransparency = 0}) end)
+					local btn = new("TextButton", {Text = o.ButtonText or "Run", Font = BOLD, TextSize = 12, TextColor3 = Theme.onAccent, AutoButtonColor = false, BackgroundColor3 = Theme.Accent, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(80, 28), Parent = row}, {corner(8)})
+					local sc = new("UIScale", {Parent = btn})
+					table.insert(Feather._accentHooks, function(c) btn.BackgroundColor3 = c end)
+					btn.MouseEnter:Connect(function() go(btn, 0.15, {BackgroundTransparency = 0.15}) end)
+					btn.MouseLeave:Connect(function() go(btn, 0.2, {BackgroundTransparency = 0}) go(sc, 0.2, {Scale = 1}) end)
+					btn.MouseButton1Down:Connect(function() go(sc, 0.1, {Scale = 0.94}) end)
+					btn.MouseButton1Up:Connect(function() go(sc, 0.25, {Scale = 1}, Enum.EasingStyle.Back) end)
 					btn.MouseButton1Click:Connect(function() if o.Callback then task.spawn(o.Callback) end end)
 					return {}
 				end
 
 				function Group:HoldButton(o)
-					local row = baseRow(o)
-					local btn = new("TextButton", {Text = o.Name or "Hold", Font = BOLD, TextSize = 12, TextColor3 = Theme.onAccent, AutoButtonColor = false, BackgroundColor3 = Theme.bad, Size = UDim2.new(1, 0, 0, 34), Parent = row}, {corner(9)})
-					btn.Position = UDim2.fromOffset(0, 2)
-					row.Size = UDim2.new(1, 0, 0, 40)
-					local fillHold = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.78, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0, Parent = btn}, {corner(9)})
-					local holding, fired
+					local row = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42), LayoutOrder = order, Parent = inner})
+					order += 1
+					local btn = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, Position = UDim2.fromOffset(0, 4), Size = UDim2.new(1, 0, 0, 34), ClipsDescendants = true, Parent = row}, {corner(9), stroke(Theme.bad, 0.4)})
+					local fillHold = new("Frame", {BackgroundColor3 = Theme.bad, BackgroundTransparency = 0.25, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0, Parent = btn}, {corner(9)})
+					label({Text = o.Name or "Hold", Font = BOLD, TextSize = 12, TextColor3 = Theme.text, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = btn})
+					local holding, fired = false, false
 					btn.MouseButton1Down:Connect(function()
 						holding, fired = true, false
 						local t0 = os.clock()
@@ -677,12 +808,15 @@ function Feather:CreateWindow(opts)
 							while holding and not fired do
 								local p = (os.clock() - t0) / dur
 								fillHold.Size = UDim2.fromScale(math.clamp(p, 0, 1), 1)
-								if p >= 1 then fired = true if o.Callback then task.spawn(o.Callback) end end
+								if p >= 1 then
+									fired = true
+									if o.Callback then task.spawn(o.Callback) end
+								end
 								RunService.RenderStepped:Wait()
 							end
 						end)
 					end)
-					local function release() holding = false go(fillHold, 0.2, {Size = UDim2.fromScale(0, 1)}) end
+					local function release() holding = false if not fired then go(fillHold, 0.25, {Size = UDim2.fromScale(0, 1)}) end end
 					btn.MouseButton1Up:Connect(release)
 					btn.MouseLeave:Connect(release)
 					return {}
@@ -696,135 +830,208 @@ function Feather:CreateWindow(opts)
 						if type(o.Default) == "table" then for _, v in ipairs(o.Default) do selected[v] = true end
 						else selected[o.Default] = true end
 					end
+					local options = o.Options or {}
 					local function displayText()
 						local list = {}
-						for k in pairs(selected) do table.insert(list, k) end
-						table.sort(list)
+						for _, opt in ipairs(options) do if selected[opt] then table.insert(list, opt) end end
 						if #list == 0 then return o.Placeholder or "None" end
 						return table.concat(list, ", ")
 					end
-					local box = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(150, 28), Parent = row}, {corner(8), stroke(Theme.line, 0.2)})
-					local boxText = label({Text = displayText(), TextSize = 12, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -30, 1, 0), Parent = box})
-					makeIcon(box, "chevron-down", 14, Theme.sub).Position = UDim2.new(1, -20, 0.5, -7)
-					local popup = new("Frame", {BackgroundColor3 = Theme.panel, Visible = false, ZIndex = 20, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 1, 4), Size = UDim2.new(0, 150, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = box}, {corner(8), stroke(Theme.line, 0), new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)})})
+					local box = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(150, 28), Parent = row}, {corner(8), stroke(Theme.line, 0)})
+					local boxText = label({Text = displayText(), TextSize = 12, TextColor3 = Theme.text, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -32, 1, 0), Parent = box})
+					local chev = makeIcon(box, "chevron-down", 14, Theme.sub)
+					chev.AnchorPoint = Vector2.new(1, 0.5)
+					chev.Position = UDim2.new(1, -9, 0.5, 0)
+
+					local popup = new("Frame", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(170, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = overlay}, {corner(10), stroke(Theme.line, 0)})
+					local list = new("ScrollingFrame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.None, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.dim, Parent = popup}, {new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}), new("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})})
+					local items = {}
 					local control = {}
 					local function fire()
 						boxText.Text = displayText()
 						if o.Callback then
 							if multi then
-								local list = {} for k in pairs(selected) do table.insert(list, k) end
-								task.spawn(o.Callback, list)
+								local l = {}
+								for _, opt in ipairs(options) do if selected[opt] then table.insert(l, opt) end end
+								task.spawn(o.Callback, l)
 							else
-								task.spawn(o.Callback, (next(selected)))
+								local one
+								for _, opt in ipairs(options) do if selected[opt] then one = opt break end end
+								task.spawn(o.Callback, one)
 							end
 						end
 					end
-					local function rebuild(options)
-						for _, c in ipairs(popup:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
-						for idx, opt in ipairs(options) do
-							local item = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26), ZIndex = 21, LayoutOrder = idx, Parent = popup}, {corner(6)})
-							label({Text = opt, TextSize = 12, Position = UDim2.fromOffset(8, 0), Size = UDim2.new(1, -16, 1, 0), ZIndex = 21, Parent = item})
-							local tick = makeIcon(item, "check", 13, Theme.Accent)
-							tick.Position = UDim2.new(1, -20, 0.5, -6.5)
-							tick.ZIndex = 21
-							local function paint() tick.Visible = selected[opt] == true item.BackgroundTransparency = selected[opt] and 0 or 1 end
-							paint()
-							item.MouseButton1Click:Connect(function()
-								if multi then selected[opt] = (not selected[opt]) or nil
-								else selected = {[opt] = true} end
-								for _, c in ipairs(popup:GetChildren()) do if c:IsA("TextButton") then c.BackgroundTransparency = 1 end end
-								for _, c in ipairs(popup:GetChildren()) do
-									if c:IsA("TextButton") then
-										local lbl = c:FindFirstChildOfClass("TextLabel")
-										local img = c:FindFirstChildOfClass("ImageLabel")
-										if lbl and img then img.Visible = selected[lbl.Text] == true c.BackgroundTransparency = selected[lbl.Text] and 0 or 1 end
-									end
-								end
-								if not multi then popup.Visible = false end
-								fire()
-							end)
+					local function paint()
+						for opt, it in pairs(items) do
+							local on = selected[opt] == true
+							go(it.btn, 0.15, {BackgroundTransparency = on and 0 or 1})
+							it.tick.Visible = on
+							it.text.TextColor3 = on and Theme.text or Theme.sub
 						end
 					end
-					rebuild(o.Options or {})
-					box.MouseButton1Click:Connect(function() popup.Visible = not popup.Visible end)
-					function control:Set(v) selected = {} if type(v) == "table" then for _, x in ipairs(v) do selected[x] = true end elseif v then selected[v] = true end rebuild(o.Options or {}) fire() end
-					function control:Get() if multi then local l = {} for k in pairs(selected) do table.insert(l, k) end return l else return (next(selected)) end end
-					function control:Refresh(options) o.Options = options rebuild(options) end
-					if o.Flag then Feather.Flags[o.Flag] = {get = control.Get, set = control.Set} end
+					local function rebuild()
+						for _, it in pairs(items) do it.btn:Destroy() end
+						items = {}
+						for idx, opt in ipairs(options) do
+							local b = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.hover, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28), LayoutOrder = idx, Parent = list}, {corner(7)})
+							local t = label({Text = opt, TextSize = 12, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(9, 0), Size = UDim2.new(1, -34, 1, 0), Parent = b})
+							local tick = makeIcon(b, "check", 13, Theme.text)
+							tick.AnchorPoint = Vector2.new(1, 0.5)
+							tick.Position = UDim2.new(1, -8, 0.5, 0)
+							items[opt] = {btn = b, tick = tick, text = t}
+							b.MouseEnter:Connect(function() if not selected[opt] then go(b, 0.12, {BackgroundTransparency = 0.5}) end end)
+							b.MouseLeave:Connect(function() if not selected[opt] then go(b, 0.15, {BackgroundTransparency = 1}) end end)
+							b.MouseButton1Click:Connect(function()
+								if multi then
+									selected[opt] = (not selected[opt]) or nil
+								elseif selected[opt] and o.AllowNone then
+									selected = {}
+								else
+									selected = {[opt] = true}
+								end
+								paint()
+								fire()
+								if not multi then closePopup() end
+							end)
+						end
+						list.Size = UDim2.new(1, 0, 0, math.min(#options, 6) * 30 + 10)
+						paint()
+					end
+					rebuild()
+					box.MouseButton1Click:Connect(function()
+						showPopup(popup, box, 170, function() go(chev, 0.2, {Rotation = 0}) end)
+						if openPopup and openPopup.frame == popup then go(chev, 0.2, {Rotation = 180}) end
+					end)
+					function control:Set(v)
+						selected = {}
+						if type(v) == "table" then for _, x in ipairs(v) do selected[x] = true end elseif v ~= nil then selected[v] = true end
+						paint()
+						fire()
+					end
+					function control:Get()
+						if multi then
+							local l = {}
+							for _, opt in ipairs(options) do if selected[opt] then table.insert(l, opt) end end
+							return l
+						end
+						for _, opt in ipairs(options) do if selected[opt] then return opt end end
+						return nil
+					end
+					function control:Refresh(newOptions, keep)
+						options = newOptions or {}
+						if not keep then selected = {} end
+						rebuild()
+						boxText.Text = displayText()
+					end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return control:Get() end, set = function(v) control:Set(v) end} end
 					return control
 				end
 
 				function Group:Segmented(o)
-					local row = baseRow(o)
-					row.Size = UDim2.new(1, 0, 0, 44)
-					local holder = new("Frame", {BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(math.min(210, (#(o.Options or {}) * 64)), 26), Parent = row}, {corner(8), new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder})})
-					local value = o.Default or (o.Options and o.Options[1])
+					local row = baseRow({Name = o.Name, Icon = o.Icon, Description = o.Description})
+					local opts2 = o.Options or {}
+					local width = math.min(220, #opts2 * 66)
+					local holder = new("Frame", {BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(width, 28), Parent = row}, {corner(8), stroke(Theme.line, 0)})
+					local slider = new("Frame", {BackgroundColor3 = Theme.Accent, Size = UDim2.new(1 / math.max(#opts2, 1), -4, 1, -4), Position = UDim2.fromOffset(2, 2), Parent = holder}, {corner(6)})
+					table.insert(Feather._accentHooks, function(c) slider.BackgroundColor3 = c end)
+					local value = o.Default or opts2[1]
 					local buttons = {}
 					local control = {}
-					local function paint()
-						for opt, b in pairs(buttons) do
+					local function paint(instant)
+						for idx, opt in ipairs(opts2) do
 							local on = opt == value
-							go(b, 0.2, {BackgroundTransparency = on and 0 or 1})
-							b.TextColor3 = on and Theme.onAccent or Theme.sub
+							if on then
+								local target = UDim2.new((idx - 1) / #opts2, 2, 0, 2)
+								if instant then slider.Position = target else go(slider, 0.25, {Position = target}) end
+							end
+							go(buttons[opt], 0.2, {TextColor3 = on and Theme.onAccent or Theme.sub})
 						end
 					end
-					for idx, opt in ipairs(o.Options or {}) do
-						local b = new("TextButton", {Text = opt, Font = BOLD, TextSize = 11, TextColor3 = Theme.sub, AutoButtonColor = false, BackgroundColor3 = Theme.Accent, BackgroundTransparency = 1, Size = UDim2.new(1 / #o.Options, 0, 1, 0), LayoutOrder = idx, Parent = holder}, {corner(7)})
+					for idx, opt in ipairs(opts2) do
+						local b = new("TextButton", {Text = opt, Font = BOLD, TextSize = 11, TextColor3 = Theme.sub, AutoButtonColor = false, BackgroundTransparency = 1, Position = UDim2.new((idx - 1) / #opts2, 0, 0, 0), Size = UDim2.new(1 / #opts2, 0, 1, 0), ZIndex = 2, Parent = holder})
 						buttons[opt] = b
-						b.MouseButton1Click:Connect(function() value = opt paint() if o.Callback then task.spawn(o.Callback, value) end end)
+						b.MouseButton1Click:Connect(function()
+							value = opt
+							paint()
+							if o.Callback then task.spawn(o.Callback, value) end
+						end)
 					end
-					paint()
+					paint(true)
 					function control:Set(v) value = v paint() if o.Callback then task.spawn(o.Callback, v) end end
 					function control:Get() return value end
-					if o.Flag then Feather.Flags[o.Flag] = {get = control.Get, set = control.Set} end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return value end, set = function(v) control:Set(v) end} end
 					return control
 				end
 
 				function Group:Input(o)
 					local row = baseRow(o)
-					local box = new("Frame", {BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(150, 28), Parent = row}, {corner(8), stroke(Theme.line, 0.2)})
-					local tb = new("TextBox", {BackgroundTransparency = 1, Text = o.Default or "", PlaceholderText = o.Placeholder or "", Font = FONT, TextSize = 12, TextColor3 = Theme.text, PlaceholderColor3 = Theme.dim, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0), Parent = box})
+					local box = new("Frame", {BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(150, 28), Parent = row}, {corner(8)})
+					local boxStroke = stroke(Theme.line, 0)
+					boxStroke.Parent = box
+					local tb = new("TextBox", {BackgroundTransparency = 1, Text = o.Default or "", PlaceholderText = o.Placeholder or "", Font = FONT, TextSize = 12, TextColor3 = Theme.text, PlaceholderColor3 = Theme.dim, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -20, 1, 0), Parent = box})
+					tb.Focused:Connect(function() go(boxStroke, 0.15, {Color = Theme.sub}) end)
+					tb.FocusLost:Connect(function()
+						go(boxStroke, 0.2, {Color = Theme.line})
+						if o.Callback then task.spawn(o.Callback, tb.Text) end
+					end)
 					local control = {}
-					tb.FocusLost:Connect(function() if o.Callback then task.spawn(o.Callback, tb.Text) end end)
 					function control:Get() return tb.Text end
-					function control:Set(v) tb.Text = v end
-					if o.Flag then Feather.Flags[o.Flag] = {get = function() return tb.Text end, set = function(v) tb.Text = v end} end
+					function control:Set(v) tb.Text = tostring(v or "") end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return tb.Text end, set = function(v) tb.Text = tostring(v or "") end} end
 					return control
 				end
 
 				function Group:Keybind(o)
 					local row = baseRow(o)
 					local key = o.Default
-					local btn = new("TextButton", {Text = key and key.Name or "None", Font = BOLD, TextSize = 12, TextColor3 = Theme.sub, AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(90, 28), Parent = row}, {corner(8), stroke(Theme.line, 0.2)})
+					local btn = new("TextButton", {Text = key and key.Name or "None", Font = BOLD, TextSize = 12, TextColor3 = Theme.text, AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(92, 28), Parent = row}, {corner(8), stroke(Theme.line, 0)})
 					local listening = false
-					btn.MouseButton1Click:Connect(function() listening = true btn.Text = "..." end)
-					UserInputService.InputBegan:Connect(function(input, gp)
-						if not listening then return end
-						if input.UserInputType == Enum.UserInputType.Keyboard then
-							listening = false key = input.KeyCode btn.Text = key.Name
-							if o.ChangedCallback then task.spawn(o.ChangedCallback, key) end
-						end
+					btn.MouseButton1Click:Connect(function()
+						listening = true
+						btn.Text = "press a key"
+						btn.TextColor3 = Theme.sub
 					end)
-					return {Get = function() return key end, Set = function(_, k) key = k btn.Text = k and k.Name or "None" end}
+					track(UserInputService.InputBegan:Connect(function(input)
+						if not listening or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+						listening = false
+						if input.KeyCode == Enum.KeyCode.Escape then
+							key = nil
+						else
+							key = input.KeyCode
+						end
+						btn.Text = key and key.Name or "None"
+						btn.TextColor3 = Theme.text
+						if o.ChangedCallback then task.spawn(o.ChangedCallback, key) end
+					end))
+					if o.Callback then
+						track(UserInputService.InputBegan:Connect(function(input, gp)
+							if gp or listening or not key then return end
+							if input.KeyCode == key then task.spawn(o.Callback, key) end
+						end))
+					end
+					local control = {}
+					function control:Get() return key end
+					function control:Set(k) key = k btn.Text = k and k.Name or "None" end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return key and key.Name end, set = function(v) local ok, kc = pcall(function() return Enum.KeyCode[v] end) if ok and kc then control:Set(kc) end end} end
+					return control
 				end
 
 				function Group:Colorpicker(o)
 					local row = baseRow(o)
 					local color = o.Default or Theme.Accent
-					local swatch = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = color, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(34, 22), Parent = row}, {corner(7), stroke(Theme.line, 0.1)})
-					local popup = new("Frame", {BackgroundColor3 = Theme.panel, Visible = false, ZIndex = 30, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 1, 6), Size = UDim2.fromOffset(180, 150), Parent = swatch}, {corner(10), stroke(Theme.line, 0), pad(8)})
-					local sv = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.fromHSV(0, 1, 1), Size = UDim2.new(1, 0, 0, 104), ZIndex = 31, Parent = popup}, {corner(6)})
-					new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 31, Parent = sv}, {corner(6), new("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})})})
-					new("Frame", {BackgroundColor3 = Color3.new(0, 0, 0), Size = UDim2.fromScale(1, 1), ZIndex = 31, Parent = sv}, {corner(6), new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})})
-					local svDot = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(8, 8), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 32, Parent = sv}, {corner(4), stroke(Color3.new(0, 0, 0), 0.4)})
-					local hue = new("ImageButton", {AutoButtonColor = false, Position = UDim2.new(0, 0, 0, 112), Size = UDim2.new(1, 0, 0, 14), ZIndex = 31, Parent = popup}, {corner(5)})
-					local hueGrad = new("UIGradient", {Parent = hue, Color = ColorSequence.new({
+					local swatch = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = color, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(36, 22), Parent = row}, {corner(7), stroke(Theme.line, 0)})
+					local popup = new("Frame", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(190, 158), Parent = overlay}, {corner(12), stroke(Theme.line, 0), pad(10)})
+					local sv = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.fromHSV(0, 1, 1), Size = UDim2.new(1, 0, 0, 104), Parent = popup}, {corner(7)})
+					new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = sv}, {corner(7), new("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})})})
+					new("Frame", {BackgroundColor3 = Color3.new(0, 0, 0), Size = UDim2.fromScale(1, 1), Parent = sv}, {corner(7), new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0)})})})
+					local svDot = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(10, 10), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3, Parent = sv}, {corner(5), stroke(Color3.new(0, 0, 0), 0.3)})
+					local hue = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.new(0, 0, 0, 114), Size = UDim2.new(1, 0, 0, 14), Parent = popup}, {corner(5), new("UIGradient", {Color = ColorSequence.new({
 						ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)), ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
 						ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
 						ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)), ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-						ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))})})
-					local hueDot = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(4, 16), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), ZIndex = 32, Parent = hue}, {corner(2), stroke(Color3.new(0, 0, 0), 0.4)})
-					local h, s, v = Color3.toHSV(color)
+						ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))})})})
+					local hueDot = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(5, 18), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), ZIndex = 3, Parent = hue}, {corner(2), stroke(Color3.new(0, 0, 0), 0.3)})
+					local h, s, v = color:ToHSV()
 					local control = {}
 					local function apply(fire)
 						color = Color3.fromHSV(h, s, v)
@@ -834,48 +1041,60 @@ function Feather:CreateWindow(opts)
 						hueDot.Position = UDim2.fromScale(h, 0.5)
 						if fire and o.Callback then task.spawn(o.Callback, color) end
 					end
-					local draggingSV, draggingH
-					sv.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = true end end)
-					hue.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingH = true end end)
-					UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV, draggingH = false, false end end)
-					UserInputService.InputChanged:Connect(function(i)
-						if i.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+					local draggingSV, draggingH = false, false
+					sv.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then draggingSV = true end end)
+					hue.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then draggingH = true end end)
+					track(UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then draggingSV, draggingH = false, false end end))
+					track(RunService.RenderStepped:Connect(function()
+						if not (draggingSV or draggingH) then return end
 						local m = UserInputService:GetMouseLocation()
 						if draggingSV then
-							s = math.clamp((m.X - sv.AbsolutePosition.X) / sv.AbsoluteSize.X, 0, 1)
-							v = 1 - math.clamp((m.Y - sv.AbsolutePosition.Y) / sv.AbsoluteSize.Y, 0, 1)
-							apply(true)
-						elseif draggingH then
-							h = math.clamp((m.X - hue.AbsolutePosition.X) / hue.AbsoluteSize.X, 0, 1)
-							apply(true)
+							s = math.clamp((m.X - sv.AbsolutePosition.X) / math.max(sv.AbsoluteSize.X, 1), 0, 1)
+							v = 1 - math.clamp((m.Y - sv.AbsolutePosition.Y) / math.max(sv.AbsoluteSize.Y, 1), 0, 1)
+						else
+							h = math.clamp((m.X - hue.AbsolutePosition.X) / math.max(hue.AbsoluteSize.X, 1), 0, 1)
 						end
-					end)
-					swatch.MouseButton1Click:Connect(function() popup.Visible = not popup.Visible end)
+						apply(true)
+					end))
+					swatch.MouseButton1Click:Connect(function() showPopup(popup, swatch, 190) end)
 					apply(false)
-					function control:Set(c) h, s, v = Color3.toHSV(c) apply(true) end
+					function control:Set(c)
+						if typeof(c) == "table" and c.R then c = Color3.new(c.R, c.G, c.B) end
+						if typeof(c) ~= "Color3" then return end
+						h, s, v = c:ToHSV()
+						apply(true)
+					end
 					function control:Get() return color end
-					if o.Flag then Feather.Flags[o.Flag] = {get = control.Get, set = control.Set} end
+					if o.Flag then Feather.Flags[o.Flag] = {get = function() return {R = color.R, G = color.G, B = color.B} end, set = function(c) control:Set(c) end} end
 					return control
 				end
 
 				function Group:Info(o)
 					local row = baseRow({Name = o.Name, Icon = o.Icon})
-					local styleColor = ({accent = Theme.Accent, success = Theme.good, error = Theme.bad, mono = Theme.sub})[o.Style] or Theme.text
-					local val = label({Text = tostring(o.Value or ""), Font = o.Style == "mono" and Enum.Font.Code or BOLD, TextSize = 12, TextColor3 = styleColor, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(180, 16), Parent = row})
-					return {Set = function(_, v) val.Text = tostring(v) end}
+					local styleColor = ({accent = Theme.text, success = Theme.good, error = Theme.bad, warning = Theme.warn, mono = Theme.sub})[o.Style] or Theme.sub
+					local val = label({Text = tostring(o.Value or ""), Font = o.Style == "mono" and Enum.Font.Code or BOLD, TextSize = 12, TextColor3 = styleColor, TextXAlignment = Enum.TextXAlignment.Right, TextTruncate = Enum.TextTruncate.AtEnd, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0, 20), Size = UDim2.fromOffset(170, 16), Parent = row})
+					local control = {}
+					function control:Set(v)
+						v = tostring(v)
+						if val.Text == v then return end
+						val.Text = v
+						val.TextTransparency = 0.6
+						go(val, 0.25, {TextTransparency = 0})
+					end
+					return control
 				end
 
 				function Group:Paragraph(o)
-					local box = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order, Parent = inner})
+					local box = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order, Parent = inner}, {new("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 6)})})
 					order += 1
-					label({Text = o.Content or "", TextSize = 12, TextColor3 = Theme.sub, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, 0, 0, 0), Parent = box})
-					return {}
+					local t = label({Text = o.Content or "", TextSize = 12, TextColor3 = Theme.sub, TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, AutomaticSize = Enum.AutomaticSize.Y, Size = UDim2.new(1, 0, 0, 0), Parent = box})
+					return {Set = function(_, v) t.Text = tostring(v) end}
 				end
 
 				function Group:Label(text)
-					label({Text = text or "", TextSize = 12, TextColor3 = Theme.text, Size = UDim2.new(1, 0, 0, 20), LayoutOrder = order, Parent = inner})
+					local t = label({Text = text or "", TextSize = 12, TextColor3 = Theme.text, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = order, Parent = inner})
 					order += 1
-					return {}
+					return {Set = function(_, v) t.Text = tostring(v) end}
 				end
 
 				return Group
@@ -896,81 +1115,184 @@ function Feather:CreateWindow(opts)
 
 	function Window:SetTitle(t) titleLabel.Text = t end
 
-	makeDraggable(header, root)
+	makeDraggable(header, root, closePopup)
 
-	-- open / close
+	-- show / hide / minimize
+	local visible = false
+	local minimized = false
 	local function openWindow()
+		visible = true
 		root.Visible = true
-		shellScale.Scale = 0.96
-		go(shellScale, 0.5, {Scale = 1}, Enum.EasingStyle.Back)
-		go(panel, 0.35, {GroupTransparency = 0})
+		rootScale.Scale = 0.94
+		go(rootScale, 0.55, {Scale = 1}, Enum.EasingStyle.Back)
+		go(panel, 0.4, {GroupTransparency = 0})
 	end
-
-	local hidden = false
-	local function setHidden(v)
-		hidden = v
-		go(shellScale, 0.3, {Scale = v and 0.96 or 1}, v and Enum.EasingStyle.Quint or Enum.EasingStyle.Back)
-		go(panel, 0.28, {GroupTransparency = v and 1 or 0})
-		task.delay(0.28, function() if hidden == v then root.Visible = not v end end)
-	end
-	closeBtn.MouseButton1Click:Connect(function() Feather:Unload() end)
-	minBtn.MouseButton1Click:Connect(function() setHidden(not hidden) end)
-	UserInputService.InputBegan:Connect(function(input, gp)
-		if gp then return end
-		if input.KeyCode == Feather.ToggleKey then setHidden(not hidden) end
-	end)
-
-	function Feather:Unload()
-		pcall(function() gui:Destroy() end)
-		if Feather._notifs then pcall(function() Feather._notifs.Parent:Destroy() end) end
-		if getgenv then getgenv().__FeatherUnload = nil end
-	end
-	if getgenv then getgenv().__FeatherUnload = function() pcall(gui.Destroy, gui) end end
-
-	-- intro: dark backdrop, feather writes the cursive name, fades to white ui
-	task.spawn(function()
-		local cover = new("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(10, 10, 12), BackgroundTransparency = 1, ZIndex = 50, Parent = gui})
-		go(cover, 0.4, {BackgroundTransparency = 0})
-		local wmId = getWordmark()
-		local holder = new("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.52), Size = UDim2.fromOffset(300, 120), BackgroundTransparency = 1, ZIndex = 51, Parent = cover})
-		local reveal = new("Frame", {BackgroundTransparency = 1, ClipsDescendants = true, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.fromScale(0, 0.5), Size = UDim2.new(0, 0, 1, 0), ZIndex = 51, Parent = holder})
-		if wmId then
-			new("ImageLabel", {BackgroundTransparency = 1, Image = wmId, ImageColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(300, 120), ZIndex = 51, Parent = reveal})
+	local function setVisible(v)
+		if visible == v then return end
+		visible = v
+		closePopup()
+		if v then
+			root.Visible = true
+			go(rootScale, 0.45, {Scale = 1}, Enum.EasingStyle.Back)
+			go(panel, 0.3, {GroupTransparency = 0})
 		else
-			label({Text = "Feather", Font = Enum.Font.GothamBlack, TextSize = 40, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(300, 120), ZIndex = 51, Parent = reveal})
+			go(rootScale, 0.28, {Scale = 0.95})
+			go(panel, 0.25, {GroupTransparency = 1})
+			task.delay(0.26, function() if not visible then root.Visible = false end end)
 		end
-		local pen = makeIcon(holder, "feather", 34, Color3.new(1, 1, 1))
-		pen.ZIndex = 52
-		pen.AnchorPoint = Vector2.new(0.5, 0.5)
-		pen.Position = UDim2.fromScale(0, 0.32)
+	end
+	local function setMinimized(v)
+		minimized = v
+		closePopup()
+		go(root, 0.4, {Size = UDim2.fromOffset(W, v and HEAD or H)})
+		go(headLine, 0.25, {BackgroundTransparency = v and 1 or 0})
+		if v then
+			body.Visible = false
+			tabbar.Visible = false
+		else
+			task.delay(0.15, function()
+				if not minimized then
+					body.Visible = true
+					tabbar.Visible = true
+				end
+			end)
+		end
+	end
+
+	closeBtn.MouseButton1Click:Connect(function() Feather:Unload() end)
+	minBtn.MouseButton1Click:Connect(function() setMinimized(not minimized) end)
+	track(UserInputService.InputBegan:Connect(function(input, gp)
+		if gp then return end
+		if input.KeyCode == Feather.ToggleKey then setVisible(not visible) end
+	end))
+
+	local unloaded = false
+	function Feather:Unload()
+		if unloaded then return end
+		unloaded = true
+		closePopup()
+		go(rootScale, 0.3, {Scale = 0.92})
+		go(panel, 0.28, {GroupTransparency = 1})
+		task.delay(0.3, function()
+			for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+			pcall(function() gui:Destroy() end)
+			if Feather._notifs then pcall(function() Feather._notifs.Parent:Destroy() end) end
+			Feather._notifs = nil
+		end)
+		if getgenv then getgenv().__FeatherUnload = nil end
+		if Feather.OnUnload then pcall(Feather.OnUnload) end
+	end
+	if getgenv then getgenv().__FeatherUnload = function() pcall(function() gui:Destroy() end) end end
+
+	-- intro: dark backdrop, the quill writes the cursive name with a glow, then the window opens
+	task.spawn(function()
+		local cover = new("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(5, 5, 7), BackgroundTransparency = 1, ZIndex = 300, Parent = gui})
+		go(cover, 0.45, {BackgroundTransparency = 0.05})
+
+		local wmId = getWordmark()
+		local glowId = b64Asset("glow.png", GLOW_B64)
+		local blobId = b64Asset("blob.png", BLOB_B64)
+		local logoId = getLogo()
+
+		local IW = 340
+		local IH = math.floor(IW * WM_H / WM_W + 0.5)
+		local scale = IW / WM_W
+		local group = new("CanvasGroup", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0.5, 6), Size = UDim2.fromOffset(IW + 300, IH + 240), BackgroundTransparency = 1, GroupTransparency = 1, ZIndex = 301, Parent = cover})
+		local groupScale = new("UIScale", {Scale = 0.97, Parent = group})
+		local stage = new("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(IW, IH), BackgroundTransparency = 1, Parent = group})
+
+		local function revealGradient(parent)
+			return new("UIGradient", {
+				Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.46, 0),
+					NumberSequenceKeypoint.new(0.54, 1), NumberSequenceKeypoint.new(1, 1),
+				}),
+				Offset = Vector2.new(-0.6, 0),
+				Parent = parent,
+			})
+		end
+
+		local glowImg, glowGrad
+		if glowId then
+			local gw, gh = (WM_W + GLOW_PAD * 2) * scale, (WM_H + GLOW_PAD * 2) * scale
+			glowImg = new("ImageLabel", {BackgroundTransparency = 1, Image = glowId, ImageColor3 = Color3.new(1, 1, 1), ImageTransparency = 0.45, ScaleType = Enum.ScaleType.Stretch, Position = UDim2.fromOffset(-GLOW_PAD * scale, -GLOW_PAD * scale), Size = UDim2.fromOffset(gw, gh), Parent = stage})
+			glowGrad = revealGradient(glowImg)
+		end
+		local wordImg, wordGrad
+		if wmId then
+			wordImg = new("ImageLabel", {BackgroundTransparency = 1, Image = wmId, ImageColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Stretch, Size = UDim2.fromOffset(IW, IH), Parent = stage})
+		else
+			wordImg = label({Text = opts.Name or "Feather", Font = Enum.Font.GothamBlack, TextSize = 46, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromOffset(IW, IH), Parent = stage})
+		end
+		wordGrad = revealGradient(wordImg)
+
+		-- the quill pivots around its tip so it can tilt without the tip sliding off the ink
+		local pivot = new("Frame", {BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(2, 2), Position = UDim2.fromOffset(0, IH * traceAt(0)), ZIndex = 5, Parent = stage})
+		local tipGlow
+		if blobId then
+			tipGlow = new("ImageLabel", {BackgroundTransparency = 1, Image = blobId, ImageColor3 = Color3.new(1, 1, 1), ImageTransparency = 0.25, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(30, 30), Parent = pivot})
+		end
+		local pen
+		local PEN_W = 118
+		if logoId then
+			pen = new("ImageLabel", {BackgroundTransparency = 1, Image = logoId, ImageColor3 = Color3.new(1, 1, 1), ScaleType = Enum.ScaleType.Stretch, Rotation = 180, AnchorPoint = Vector2.new(1 - QUILL_TIP.X, 1 - QUILL_TIP.Y), Position = UDim2.fromOffset(1, 1), Size = UDim2.fromOffset(PEN_W, PEN_W / LOGO_ASPECT), Parent = pivot})
+		else
+			pen = makeIcon(pivot, "feather", 40, Color3.new(1, 1, 1))
+			pen.AnchorPoint = Vector2.new(0.05, 0.95)
+			pen.Position = UDim2.fromOffset(1, 1)
+		end
+		pen.ImageTransparency = 1
+
+		task.wait(0.35)
+		go(group, 0.45, {GroupTransparency = 0})
+		go(groupScale, 0.6, {Scale = 1}, Enum.EasingStyle.Back)
+		go(pen, 0.35, {ImageTransparency = 0})
+		task.wait(0.3)
+
+		local dur = 2.1
 		local t0 = os.clock()
-		local dur = 1.5
-		while os.clock() - t0 < dur do
-			local p = (os.clock() - t0) / dur
-			reveal.Size = UDim2.new(p, 0, 1, 0)
-			pen.Position = UDim2.fromScale(p, 0.32)
+		while true do
+			local t = math.clamp((os.clock() - t0) / dur, 0, 1)
+			local p = t * 0.75 + (t * t * (3 - 2 * t)) * 0.25
+			local ty = traceAt(p)
+			local jitter = math.sin(os.clock() * 38) * 0.9
+			pivot.Position = UDim2.fromOffset(p * IW, ty * IH + jitter)
+			local slope = (traceAt(p + 0.02) - traceAt(p - 0.02)) / 0.04
+			pivot.Rotation = math.clamp(slope * 9, -14, 14) + math.sin(os.clock() * 7) * 2
+			wordGrad.Offset = Vector2.new(p - 0.5, 0)
+			if glowGrad then
+				local gx = (GLOW_PAD + p * WM_W) / (WM_W + GLOW_PAD * 2)
+				glowGrad.Offset = Vector2.new(gx - 0.5, 0)
+			end
+			if tipGlow then
+				tipGlow.ImageTransparency = 0.2 + math.abs(math.sin(os.clock() * 9)) * 0.25
+			end
+			if t >= 1 then break end
 			RunService.RenderStepped:Wait()
 		end
-		reveal.Size = UDim2.new(1, 0, 1, 0)
-		pen.Position = UDim2.fromScale(1, 0.32)
-		task.wait(0.35)
-		go(pen, 0.3, {ImageTransparency = 1})
+		wordGrad.Offset = Vector2.new(0.6, 0)
+		if glowGrad then glowGrad.Offset = Vector2.new(0.6, 0) end
+
+		-- lift the quill off the paper and let the glow breathe once
+		go(pivot, 0.55, {Position = pivot.Position + UDim2.fromOffset(26, -34), Rotation = -18})
+		go(pen, 0.5, {ImageTransparency = 1})
+		if tipGlow then go(tipGlow, 0.4, {ImageTransparency = 1}) end
+		if glowImg then
+			go(glowImg, 0.35, {ImageTransparency = 0.12})
+			task.delay(0.35, function() if glowImg.Parent then go(glowImg, 0.6, {ImageTransparency = 0.5}) end end)
+		end
+		task.wait(0.85)
+
+		go(groupScale, 0.5, {Scale = 1.04})
+		go(group, 0.45, {GroupTransparency = 1})
+		go(cover, 0.55, {BackgroundTransparency = 1})
+		task.wait(0.2)
 		openWindow()
-		go(cover, 0.5, {BackgroundTransparency = 1})
-		go(holder, 0.4, {Position = UDim2.fromScale(0.5, 0.45)})
-		for _, d in ipairs(reveal:GetDescendants()) do if d:IsA("ImageLabel") or d:IsA("TextLabel") then go(d, 0.4, {ImageTransparency = 1, TextTransparency = 1}) end end
-		task.wait(0.55)
+		task.wait(0.4)
 		cover:Destroy()
 	end)
 
-	Feather._accentHooks[#Feather._accentHooks + 1] = function(c)
-		for _, inst in ipairs(gui:GetDescendants()) do
-			if inst:GetAttribute("FeatherAccent") then inst.BackgroundColor3 = c end
-		end
-	end
-
 	return Window
 end
-
 
 return Feather
