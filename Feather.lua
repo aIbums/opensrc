@@ -1247,7 +1247,7 @@ function Feather:CreateWindow(opts)
 		go(pen, 0.35, {ImageTransparency = 0})
 		task.wait(0.3)
 
-		local dur = 2.4
+		local dur = 3.4
 		local t0 = os.clock()
 		while true do
 			local t = math.clamp((os.clock() - t0) / dur, 0, 1)
