@@ -63,15 +63,17 @@ do
 	for i = 1, #chars do lookup[string.byte(chars, i)] = i - 1 end
 	function B64.decode(data)
 		local out = {}
-		local bits, count = 0, 0
+		local acc, nbits = 0, 0
 		for i = 1, #data do
 			local v = lookup[string.byte(data, i)]
 			if v then
-				bits = bits * 64 + v
-				count += 6
-				if count >= 8 then
-					count -= 8
-					out[#out + 1] = string.char(math.floor(bits / 2 ^ count) % 256)
+				acc = acc * 64 + v
+				nbits += 6
+				if nbits >= 8 then
+					nbits -= 8
+					local scale = 2 ^ nbits
+					out[#out + 1] = string.char(math.floor(acc / scale) % 256)
+					acc = acc % scale
 				end
 			end
 		end
