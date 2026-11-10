@@ -450,6 +450,14 @@ local function makeIcon(parent, name, size, color)
 	return holder
 end
 
+-- a canvas group cuts off a stroke put straight on it, so its outline sits on a frame just inside the edge
+local function outline(parent, radius, color, trans)
+	local holder = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(1, 1), Size = UDim2.new(1, -2, 1, -2), ZIndex = 50, Parent = parent}, {corner(math.max(radius - 1, 0))})
+	local st = stroke(color, trans)
+	st.Parent = holder
+	return st
+end
+
 local function textSize(text, size, font, width)
 	local ok, v = pcall(function() return TextService:GetTextSize(text, size, font, Vector2.new(width or 2000, 2000)) end)
 	if ok and v then return v end
@@ -503,7 +511,8 @@ function Feather:Notify(opts)
 
 	-- the slot holds the space in the stack, the card slides and fades inside it
 	local slot = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), LayoutOrder = Feather._noteCount, Parent = holder})
-	local card = new("CanvasGroup", {BackgroundColor3 = Theme.panel, GroupTransparency = 1, Position = UDim2.fromOffset(28, 0), Size = UDim2.new(1, 0, 0, height), Parent = slot}, {corner(13), stroke(Theme.line, 0)})
+	local card = new("CanvasGroup", {BackgroundColor3 = Theme.panel, GroupTransparency = 1, Position = UDim2.fromOffset(28, 0), Size = UDim2.new(1, 0, 0, height), Parent = slot}, {corner(13)})
+	outline(card, 13, Theme.line, 0)
 	local ic = makeIcon(card, NOTE_ICON[kind], 16, tint)
 	ic.Position = UDim2.fromOffset(14, 12)
 	label({Text = title, Font = BOLD, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(42, 12), Size = UDim2.fromOffset(textW, 16), Parent = card})
@@ -705,9 +714,8 @@ function Feather:CreateWindow(opts)
 	local glass = math.clamp(tonumber(opts.Transparency) or 0.06, 0, 0.6)
 	local function island(x, w)
 		local isle = new("CanvasGroup", {BackgroundColor3 = Theme.bg, BackgroundTransparency = glass, Position = UDim2.fromOffset(x + 3, 3), Size = UDim2.new(0, w, 1, -6), Parent = panel}, {corner(15)})
-		local edge = stroke(Color3.new(1, 1, 1), 0)
-		new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(72, 72, 80), Color3.fromRGB(34, 34, 39)), Parent = edge})
-		edge.Parent = isle
+		local edge = outline(isle, 15, Color3.new(1, 1, 1), 0)
+		new("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(74, 74, 82), Color3.fromRGB(34, 34, 39)), Parent = edge})
 		new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 150), ZIndex = 0, Parent = isle}, {new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new(0.95, 1)})})
 		return isle
 	end
@@ -717,7 +725,9 @@ function Feather:CreateWindow(opts)
 	-- popups live above everything so cards and scrolling never cut them off
 	local overlay = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 200, Parent = gui})
 	local openPopup
+	local hideSearch
 	local function closePopup()
+		if hideSearch then hideSearch() end
 		local p = openPopup
 		if not p then return end
 		openPopup = nil
@@ -821,8 +831,8 @@ function Feather:CreateWindow(opts)
 	-- right island: what is open, the window buttons, then the page itself
 	local header = new("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, HEAD), ZIndex = 4, Parent = mainIsle})
 	local headTile = new("Frame", {BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 18, 0.5, 0), Size = UDim2.fromOffset(32, 32), Parent = header}, {corner(10), stroke(Theme.line, 0)})
-	local tabTitle = label({Text = "", Font = BOLD, TextSize = 16, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(61, 20), Size = UDim2.new(1, -(61 + 96), 0, 20), Parent = header})
-	local tabHint = label({Text = "", Font = REG, TextSize = 11, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(61, 34), Size = UDim2.new(1, -(61 + 96), 0, 13), Parent = header})
+	local tabTitle = label({Text = "", Font = BOLD, TextSize = 16, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(61, 20), Size = UDim2.new(1, -(61 + 96 + 158), 0, 20), Parent = header})
+	local tabHint = label({Text = "", Font = REG, TextSize = 11, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(61, 34), Size = UDim2.new(1, -(61 + 96 + 158), 0, 13), Parent = header})
 	local headRule = new("Frame", {BackgroundColor3 = Theme.line, BackgroundTransparency = 0.3, BorderSizePixel = 0, Position = UDim2.fromOffset(18, HEAD), Size = UDim2.new(1, -36, 0, 1), Parent = mainIsle})
 	local function setHint(text)
 		tabHint.Text = text
@@ -846,7 +856,7 @@ function Feather:CreateWindow(opts)
 	local body = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, HEAD + 1), Size = UDim2.fromOffset(MAIN_W, H - HEAD - 1), ClipsDescendants = true, Parent = mainIsle})
 	new("Frame", {BackgroundColor3 = Theme.bg, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 20), ZIndex = 5, Parent = body}, {new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new(1, 0.15)})})
 
-	local Window = {tabs = {}, _active = nil, _order = 0, _category = nil}
+	local Window = {tabs = {}, _rows = {}, _active = nil, _order = 0, _category = nil}
 
 	-- a tab is just an icon and a name until it is open, then the light slides in behind it
 	local function paintTab(t, instant)
@@ -1001,6 +1011,7 @@ function Feather:CreateWindow(opts)
 			local segLabel = label({Text = pageName, TextSize = 12, TextColor3 = Theme.sub, Position = UDim2.fromOffset(pageOpts.Icon and 20 or 0, 0), Size = UDim2.new(0, segText, 1, 0), Parent = seg})
 
 			local page = {name = pageName, x = segX, w = segW, scroller = scroller, _seg = seg, _label = segLabel, _icon = pageIcon}
+			page._select = function() selectPage(page) end
 			segX += segW + 20
 			table.insert(tab.pages, page)
 			seg.MouseButton1Click:Connect(function() selectPage(page) end)
@@ -1044,7 +1055,10 @@ function Feather:CreateWindow(opts)
 					elseif hasDesc then
 						height = math.max(height, 11 + 16 + 3 + descH + 11)
 					end
-					local row = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.panel, Size = UDim2.new(1, 0, 0, height), LayoutOrder = order, Parent = box}, {corner(10), stroke(Theme.line, 0.25)})
+					local row = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.panel, Size = UDim2.new(1, 0, 0, height), LayoutOrder = order, Parent = box}, {corner(10)})
+					local rowStroke = stroke(Theme.line, 0.25)
+					rowStroke.Parent = row
+					if o.Name and o.Name ~= "" then table.insert(Window._rows, {name = tostring(o.Name), tab = tab, page = page, row = row, stroke = rowStroke}) end
 					if not cfg.plain then row.MouseEnter:Connect(function() setHover(row) end) end
 					local content = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -24, 1, 0), Parent = row})
 					if o.Icon then
@@ -1230,7 +1244,8 @@ function Feather:CreateWindow(opts)
 					chev.AnchorPoint = Vector2.new(1, 0.5)
 					chev.Position = UDim2.new(1, -9, 0.5, 0)
 
-					local popup = new("CanvasGroup", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(170, 40), Parent = overlay}, {corner(11), stroke(Theme.line, 0)})
+					local popup = new("CanvasGroup", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(170, 40), Parent = overlay}, {corner(11)})
+					outline(popup, 11, Theme.line, 0)
 					local list = new("ScrollingFrame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = Theme.dim, Parent = popup}, {
 						new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}),
 						new("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}),
@@ -1419,12 +1434,13 @@ function Feather:CreateWindow(opts)
 					local content, row = baseRow(o, 50)
 					local color = o.Default or Theme.Accent
 					local swatch = new("Frame", {BackgroundColor3 = color, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(36, 22), Parent = content}, {corner(7), stroke(Theme.line, 0)})
-					local popup = new("CanvasGroup", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(190, 158), Parent = overlay}, {corner(12), stroke(Theme.line, 0), pad(10)})
-					local sv = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.fromHSV(0, 1, 1), Size = UDim2.new(1, 0, 0, 104), Parent = popup}, {corner(7)})
+					local popup = new("CanvasGroup", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(190, 158), Parent = overlay}, {corner(12)})
+					outline(popup, 12, Theme.line, 0)
+					local sv = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.fromHSV(0, 1, 1), Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 0, 104), Parent = popup}, {corner(7)})
 					new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), Parent = sv}, {corner(7), new("UIGradient", {Transparency = NumberSequence.new(0, 1)})})
 					new("Frame", {BackgroundColor3 = Color3.new(0, 0, 0), Size = UDim2.fromScale(1, 1), Parent = sv}, {corner(7), new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new(1, 0)})})
 					local svDot = new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(10, 10), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 3, Parent = sv}, {corner(5), stroke(Color3.new(0, 0, 0), 0.3)})
-					local hue = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.new(0, 0, 0, 114), Size = UDim2.new(1, 0, 0, 14), Parent = popup}, {corner(5), new("UIGradient", {Color = ColorSequence.new({
+					local hue = new("ImageButton", {AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), Position = UDim2.fromOffset(10, 124), Size = UDim2.new(1, -20, 0, 14), Parent = popup}, {corner(5), new("UIGradient", {Color = ColorSequence.new({
 						ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)), ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
 						ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
 						ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)), ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
@@ -1545,6 +1561,7 @@ function Feather:CreateWindow(opts)
 		go(sideIsle, 0.75, {Position = UDim2.fromOffset(3, 3)})
 		go(mainIsle, 0.75, {Position = UDim2.fromOffset(MAIN_X + 3, 3)})
 		refreshKey()
+		Window:SetWatermark(true)
 		local t = Window._active
 		if t then
 			t.host.GroupTransparency = 1
@@ -1586,6 +1603,133 @@ function Feather:CreateWindow(opts)
 				end
 			end)
 		end
+	end
+
+	-- search: type a few letters, pick a result, land on that option
+	local searchBox = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -86, 0.5, 0), Size = UDim2.fromOffset(150, 28), Parent = header}, {corner(9)})
+	local searchStroke = stroke(Theme.line, 0)
+	searchStroke.Parent = searchBox
+	local searchIcon = makeIcon(searchBox, "search", 13, Theme.dim)
+	searchIcon.AnchorPoint = Vector2.new(0, 0.5)
+	searchIcon.Position = UDim2.new(0, 9, 0.5, 0)
+	local searchInput = new("TextBox", {BackgroundTransparency = 1, Text = "", PlaceholderText = "Search", Font = FONT, TextSize = 12, TextColor3 = Theme.text, PlaceholderColor3 = Theme.dim, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false, ClipsDescendants = true, Position = UDim2.fromOffset(29, 0), Size = UDim2.new(1, -37, 1, 0), Parent = searchBox})
+	local results = new("CanvasGroup", {BackgroundColor3 = Theme.panel, Visible = false, Size = UDim2.fromOffset(250, 40), Parent = overlay}, {corner(11)})
+	outline(results, 11, Theme.line, 0)
+	local resultList = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = results}, {
+		new("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}),
+		new("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}),
+	})
+	hideSearch = function() results.Visible = false end
+
+	local function jumpTo(r)
+		searchInput.Text = ""
+		searchInput:ReleaseFocus()
+		results.Visible = false
+		if minimized then setMinimized(false) end
+		selectTab(r.tab)
+		r.page._select()
+		task.spawn(function()
+			-- give the page a couple of frames to lay out before measuring where the row ended up
+			RunService.RenderStepped:Wait()
+			RunService.RenderStepped:Wait()
+			local sc = r.page.scroller
+			local y = r.row.AbsolutePosition.Y - sc.AbsolutePosition.Y + sc.CanvasPosition.Y - 60
+			go(sc, 0.35, {CanvasPosition = Vector2.new(0, math.max(y, 0))})
+			r.stroke.Color = Theme.text
+			r.stroke.Transparency = 0
+			task.wait(0.6)
+			go(r.stroke, 0.9, {Color = Theme.line, Transparency = 0.25})
+		end)
+	end
+
+	local function runSearch()
+		for _, c in ipairs(resultList:GetChildren()) do
+			if c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end
+		end
+		local q = string.lower(searchInput.Text)
+		if q == "" then results.Visible = false return end
+		local found = {}
+		for _, r in ipairs(Window._rows) do
+			local at = string.find(string.lower(r.name), q, 1, true)
+			if at then table.insert(found, {r = r, at = at}) end
+		end
+		table.sort(found, function(a, b)
+			if a.at ~= b.at then return a.at < b.at end
+			return a.r.name < b.r.name
+		end)
+		local count = math.min(#found, 6)
+		if count == 0 then
+			label({Text = "Nothing matches", TextSize = 12, TextColor3 = Theme.dim, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 0, 30), Parent = resultList})
+		end
+		for i = 1, count do
+			local r = found[i].r
+			local where = r.tab.name .. (#r.tab.pages > 1 and ("  /  " .. r.page.name) or "")
+			local b = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.hover, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 38), LayoutOrder = i, Parent = resultList}, {corner(8)})
+			label({Text = r.name, TextSize = 12, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(10, 5), Size = UDim2.new(1, -20, 0, 15), Parent = b})
+			label({Text = where, Font = REG, TextSize = 10, TextColor3 = Theme.sub, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(10, 20), Size = UDim2.new(1, -20, 0, 12), Parent = b})
+			b.MouseEnter:Connect(function() go(b, 0.12, {BackgroundTransparency = 0}) end)
+			b.MouseLeave:Connect(function() go(b, 0.15, {BackgroundTransparency = 1}) end)
+			b.MouseButton1Click:Connect(function() jumpTo(r) end)
+		end
+		local origin = overlay.AbsolutePosition
+		local ap, as = searchBox.AbsolutePosition - origin, searchBox.AbsoluteSize
+		results.Position = UDim2.fromOffset(ap.X + as.X - 250, ap.Y + as.Y + 6)
+		results.Size = UDim2.fromOffset(250, count == 0 and 40 or count * 40 + 8)
+		if not results.Visible then
+			results.GroupTransparency = 1
+			results.Visible = true
+			go(results, 0.15, {GroupTransparency = 0})
+		end
+	end
+	track(searchInput:GetPropertyChangedSignal("Text"):Connect(runSearch))
+	searchBox.MouseButton1Click:Connect(function() searchInput:CaptureFocus() end)
+	searchInput.Focused:Connect(function()
+		go(searchStroke, 0.15, {Color = Theme.sub})
+		go(searchIcon, 0.15, {ImageColor3 = Theme.text})
+		runSearch()
+	end)
+	searchInput.FocusLost:Connect(function()
+		go(searchStroke, 0.25, {Color = Theme.line})
+		go(searchIcon, 0.25, {ImageColor3 = Theme.dim})
+		-- wait a beat so a click on a result still lands
+		task.delay(0.2, function() if not searchInput:IsFocused() then results.Visible = false end end)
+	end)
+
+	-- status pill at the top of the screen. it stays up while the menu is hidden, so its easy to tell the script is still running
+	local mark
+	if opts.Watermark ~= false then
+		mark = new("Frame", {BackgroundColor3 = Theme.bg, BackgroundTransparency = glass, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, -44), Size = UDim2.fromOffset(0, 30), AutomaticSize = Enum.AutomaticSize.X, Visible = false, Parent = gui}, {
+			corner(10), stroke(Theme.line, 0),
+			new("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 9), SortOrder = Enum.SortOrder.LayoutOrder}),
+			new("UIPadding", {PaddingLeft = UDim.new(0, 11), PaddingRight = UDim.new(0, 12)}),
+		})
+		local quill = b64Asset("quill4.png", LOGO_B64)
+		if quill then new("ImageLabel", {BackgroundTransparency = 1, Image = quill, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(24, 13), LayoutOrder = 1, Parent = mark}) end
+		local function cell(order, text, color, font)
+			if order > 2 then new("Frame", {BackgroundColor3 = Theme.line, BorderSizePixel = 0, Size = UDim2.fromOffset(1, 12), LayoutOrder = order * 2 - 1, Parent = mark}) end
+			return label({Text = text, Font = font, TextSize = 11, TextColor3 = color, Size = UDim2.fromOffset(0, 16), AutomaticSize = Enum.AutomaticSize.X, LayoutOrder = order * 2, Parent = mark})
+		end
+		cell(2, opts.Name or "Feather", Theme.text, BOLD)
+		local fpsCell = cell(3, "-- fps", Theme.sub, FONT)
+		local pingCell = cell(4, "-- ms", Theme.sub, FONT)
+		local timeCell = cell(5, os.date("%H:%M"), Theme.sub, FONT)
+		local frames, since = 0, os.clock()
+		track(RunService.RenderStepped:Connect(function()
+			frames += 1
+			local now = os.clock()
+			if now - since < 0.5 then return end
+			fpsCell.Text = tostring(math.floor(frames / (now - since) + 0.5)) .. " fps"
+			frames, since = 0, now
+			local ok, ping = pcall(function() return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() end)
+			pingCell.Text = (ok and type(ping) == "number") and (tostring(math.floor(ping + 0.5)) .. " ms") or "-- ms"
+			timeCell.Text = os.date("%H:%M")
+		end))
+	end
+	function Window:SetWatermark(on)
+		if not mark then return end
+		if on then mark.Visible = true end
+		go(mark, 0.45, {Position = UDim2.new(1, -14, 0, on and 14 or -44)})
+		if not on then task.delay(0.46, function() if mark.Position.Y.Offset < 0 then mark.Visible = false end end) end
 	end
 
 	minBtn.MouseButton1Click:Connect(function() setMinimized(not minimized) end)
@@ -1790,56 +1934,108 @@ function Feather:CreateWindow(opts)
 
 		wordImg.ImageTransparency = 0
 		ink:Destroy()
-		-- whatever sparks are still in the air get to finish falling
-		task.spawn(function()
-			local t0 = os.clock()
-			while os.clock() - t0 < 1 do
-				local dt = RunService.RenderStepped:Wait()
-				stepSparks(type(dt) == "number" and dt or 1 / 60)
-			end
-			for _, sp in ipairs(sparks) do sp.img:Destroy() end
-		end)
-		go(pivot, 0.8, {Position = pivot.Position + UDim2.fromOffset(38, -52), Rotation = tilt - 14})
-		go(pen, 0.55, {ImageTransparency = 1}, Enum.EasingStyle.Sine)
-		if nib then go(nib, 0.3, {ImageTransparency = 1}) end
 		if glow and glowGrad then
 			go(glowGrad, 0.5, {Offset = Vector2.new(0.75, 0)}, Enum.EasingStyle.Sine)
 			go(glow, 0.5, {ImageTransparency = 0.05}, Enum.EasingStyle.Sine)
 			task.delay(0.5, function() go(glow, 0.9, {ImageTransparency = 0.4}, Enum.EasingStyle.Sine) end)
 		end
-		pause(0.2)
-		go(rule, 0.8, {Size = UDim2.fromOffset(180, 1), BackgroundTransparency = 0.7})
-		if byline then
-			go(byline, 0.8, {TextTransparency = 0.1, Position = UDim2.new(0, 0, 1, 20)})
+		-- the ink settles a shade darker while the quill finishes up
+		local DIM = Color3.fromRGB(196, 196, 202)
+		go(wordImg, 0.4, {ImageColor3 = DIM}, Enum.EasingStyle.Sine)
+
+		-- carries the nib from where it is to a spot, hopping off the page on the way if asked, and keeps the sparks falling
+		local penX, penY = pathAt(1)
+		penX, penY = penX * WORD_W, penY * WORD_H
+		local function movePen(tx, ty, dur, hop, each)
+			local fx, fy = penX, penY
+			local t0 = os.clock()
+			local prev = t0
+			while true do
+				local now = os.clock()
+				local dt = math.clamp(now - prev, 1 / 500, 0.1)
+				prev = now
+				local a = skip and 1 or math.clamp((now - t0) / dur, 0, 1)
+				local e = TweenService:GetValue(a, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+				penX, penY = fx + (tx - fx) * e, fy + (ty - fy) * e
+				local lift = hop * math.sin(math.pi * a)
+				pivot.Position = UDim2.fromOffset(penX, penY - lift)
+				if nib then nib.ImageTransparency = math.clamp(0.2 + lift / 12, 0.2, 1) end
+				if each then each(e, dt) end
+				stepSparks(dt)
+				if a >= 1 then break end
+				RunService.RenderStepped:Wait()
+			end
 		end
 
-		-- the ink settles a shade darker, then a glint runs across it and it comes back up to full white
-		local DIM = Color3.fromRGB(196, 196, 202)
-		go(wordImg, 0.3, {ImageColor3 = DIM}, Enum.EasingStyle.Sine)
-		pause(0.3)
+		-- it drops under the word and pulls a line across, like finishing a signature
+		local RULE_W = 190
+		local ruleX, ruleY = (WORD_W - RULE_W) / 2, WORD_H + 10
+		rule.AnchorPoint = Vector2.new(0, 0)
+		rule.Position = UDim2.fromOffset(ruleX, ruleY)
+		new("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.14, 0), NumberSequenceKeypoint.new(0.86, 0), NumberSequenceKeypoint.new(1, 1)}), Parent = rule})
+		go(pivot, 0.3, {Rotation = BASE_TILT})
+		movePen(ruleX, ruleY, 0.36, 16)
+		rule.BackgroundTransparency = 0.5
+		local sparkGap = 0
+		movePen(ruleX + RULE_W, ruleY, 0.5, 0, function(e, dt)
+			rule.Size = UDim2.fromOffset(RULE_W * e, 1)
+			sparkGap += dt
+			if sparkGap > 0.03 and not skip then
+				sparkGap = 0
+				spark(penX, penY)
+			end
+		end)
+		rule.Size = UDim2.fromOffset(RULE_W, 1)
+
+		-- then it lifts away and comes to rest upright beside the word, while a glint runs across the ink
+		if byline then go(byline, 0.8, {TextTransparency = 0.1, Position = UDim2.new(0, 0, 1, 20)}) end
+		if nib then
+			go(nib, 0.3, {ImageTransparency = 1})
+			nib = nil
+		end
+		go(pivot, 0.6, {Rotation = 0}, Enum.EasingStyle.Sine)
+		local shine
 		if not skip then
 			wordImg.ImageColor3 = Color3.new(1, 1, 1)
-			local shine = new("UIGradient", {Rotation = 18, Offset = Vector2.new(-1, 0), Color = ColorSequence.new({
+			shine = new("UIGradient", {Rotation = 18, Offset = Vector2.new(-1, 0), Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, DIM), ColorSequenceKeypoint.new(0.38, DIM), ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
 				ColorSequenceKeypoint.new(0.62, DIM), ColorSequenceKeypoint.new(1, DIM)}), Parent = wordImg})
-			go(shine, 0.85, {Offset = Vector2.new(1, 0)}, Enum.EasingStyle.Sine)
-			pause(0.85)
+			go(shine, 0.9, {Offset = Vector2.new(1, 0)}, Enum.EasingStyle.Sine)
+		end
+		movePen(WORD_W + 30, WORD_H * 0.46, 0.65, 0)
+		task.spawn(function()
+			local t0 = os.clock()
+			while os.clock() - t0 < 0.9 do
+				local dt = RunService.RenderStepped:Wait()
+				stepSparks(type(dt) == "number" and dt or 1 / 60)
+			end
+			for _, sp in ipairs(sparks) do sp.img:Destroy() end
+		end)
+		pause(0.25)
+		if shine then
 			shine:Destroy()
 			wordImg.ImageColor3 = DIM
 		end
 		go(wordImg, 0.35, {ImageColor3 = Color3.new(1, 1, 1)}, Enum.EasingStyle.Sine)
-		pause(0.45)
+		pause(0.4)
 
-		-- hand the word over to the menu: a copy flies to where the small one sits while everything else fades
+		-- hand both over to the menu: copies of the word and the quill fly to where the small ones sit while everything else fades
 		root.Visible = true
 		rootScale.Scale = fit
 		headWord.ImageTransparency = 1
 		headLogo.ImageTransparency = 1
+		pivot.Rotation = 0
 		RunService.RenderStepped:Wait()
-		local base = layer.AbsolutePosition
-		local fromPos, fromSize = wordImg.AbsolutePosition - base, wordImg.AbsoluteSize
+		local origin = layer.AbsolutePosition
+		local fromPos, fromSize = wordImg.AbsolutePosition - origin, wordImg.AbsoluteSize
 		local fly = new("ImageLabel", {BackgroundTransparency = 1, Image = wordId, Position = UDim2.fromOffset(fromPos.X, fromPos.Y), Size = UDim2.fromOffset(fromSize.X, fromSize.Y), ZIndex = 5, Parent = layer})
 		wordImg.Visible = false
+		local flyPen, penPos, penSize
+		if quillId then
+			penPos, penSize = pen.AbsolutePosition - origin, pen.AbsoluteSize
+			flyPen = new("ImageLabel", {BackgroundTransparency = 1, Image = quillId, Rotation = 180, Position = UDim2.fromOffset(penPos.X, penPos.Y), Size = UDim2.fromOffset(penSize.X, penSize.Y), ZIndex = 6, Parent = layer})
+			pen.Visible = false
+		end
 		go(group, 0.4, {GroupTransparency = 1}, Enum.EasingStyle.Sine)
 		go(hint, 0.3, {TextTransparency = 1})
 		go(cover, 0.85, {BackgroundTransparency = 1}, Enum.EasingStyle.Sine)
@@ -1849,15 +2045,27 @@ function Feather:CreateWindow(opts)
 		while true do
 			local a = math.clamp((os.clock() - t0) / FLY, 0, 1)
 			local e = TweenService:GetValue(a, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
-			local toPos, toSize = headWord.AbsolutePosition - base, headWord.AbsoluteSize
+			local toPos, toSize = headWord.AbsolutePosition - origin, headWord.AbsoluteSize
 			fly.Position = UDim2.fromOffset(fromPos.X + (toPos.X - fromPos.X) * e, fromPos.Y + (toPos.Y - fromPos.Y) * e)
 			fly.Size = UDim2.fromOffset(fromSize.X + (toSize.X - fromSize.X) * e, fromSize.Y + (toSize.Y - fromSize.Y) * e)
+			if flyPen then
+				-- the quill turns right way up on the way, and lands as the logo
+				local lp, ls = headLogo.AbsolutePosition - origin, headLogo.AbsoluteSize
+				flyPen.Position = UDim2.fromOffset(penPos.X + (lp.X - penPos.X) * e, penPos.Y + (lp.Y - penPos.Y) * e)
+				flyPen.Size = UDim2.fromOffset(penSize.X + (ls.X - penSize.X) * e, penSize.Y + (ls.Y - penSize.Y) * e)
+				flyPen.Rotation = 180 + 180 * e
+			end
 			if a >= 1 then break end
 			RunService.RenderStepped:Wait()
 		end
 		headWord.ImageTransparency = 0
 		fly:Destroy()
-		go(headLogo, 0.5, {ImageTransparency = 0})
+		if flyPen then
+			headLogo.ImageTransparency = 0
+			flyPen:Destroy()
+		else
+			go(headLogo, 0.5, {ImageTransparency = 0})
+		end
 		task.wait(0.3)
 		layer:Destroy()
 	end
@@ -1872,7 +2080,7 @@ function Feather:CreateWindow(opts)
 		if unloaded then return end
 		-- whatever happened above, end up with a clean window on screen
 		for _, child in ipairs(gui:GetChildren()) do
-			if child ~= root and child ~= overlay then child:Destroy() end
+			if child ~= root and child ~= overlay and child ~= mark then child:Destroy() end
 		end
 		headWord.ImageTransparency = 0
 		headLogo.ImageTransparency = 0
