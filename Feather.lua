@@ -683,7 +683,7 @@ local function makeDraggable(handle, target, onStart)
 end
 
 local W, H, HEAD = 728, 504, 60
-local SIDE_W, GAP = 196, 8
+local SIDE_W, GAP = 196, 1
 local MAIN_X = SIDE_W + GAP
 local MAIN_W = W - MAIN_X
 local ROW = 40
@@ -708,8 +708,8 @@ function Feather:CreateWindow(opts)
 
 	local root = new("Frame", {AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -math.floor(H * fit / 2)), Size = UDim2.fromOffset(W, H), BackgroundTransparency = 1, Visible = false, Parent = gui})
 	local rootScale = new("UIScale", {Scale = fit, Parent = root})
-	-- the window is two glass islands side by side: tabs on the left, the open tab on the right.
-	-- panel only exists to fade them together, and is a hair bigger so their outlines are not cut off
+	-- one sheet of glass: tabs down the left, the open tab on the right, a thin line between them.
+	-- panel only exists to fade it, and is a hair bigger so the outline is not cut off
 	local panel = new("CanvasGroup", {BackgroundTransparency = 1, GroupTransparency = 1, Position = UDim2.fromOffset(-3, -3), Size = UDim2.new(1, 6, 1, 6), Parent = root})
 	local glass = math.clamp(tonumber(opts.Transparency) or 0.06, 0, 0.6)
 	local function island(x, w)
@@ -719,8 +719,11 @@ function Feather:CreateWindow(opts)
 		new("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 150), ZIndex = 0, Parent = isle}, {new("UIGradient", {Rotation = 90, Transparency = NumberSequence.new(0.95, 1)})})
 		return isle
 	end
-	local sideIsle = island(0, SIDE_W)
-	local mainIsle = island(MAIN_X, MAIN_W)
+	local isle = island(0, W)
+	-- the sidebar is the same window, just a shade darker
+	local sideIsle = new("Frame", {BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.78, BorderSizePixel = 0, Size = UDim2.new(0, SIDE_W, 1, 0), Parent = isle})
+	new("Frame", {BackgroundColor3 = Theme.line, BackgroundTransparency = 0.15, BorderSizePixel = 0, Position = UDim2.fromOffset(SIDE_W, 0), Size = UDim2.new(0, 1, 1, 0), Parent = isle})
+	local mainIsle = new("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(MAIN_X, 0), Size = UDim2.new(0, MAIN_W, 1, 0), Parent = isle})
 
 	-- popups live above everything so cards and scrolling never cut them off
 	local overlay = new("Frame", {BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 200, Parent = gui})
@@ -871,7 +874,6 @@ function Feather:CreateWindow(opts)
 
 	local function pageHint(tab)
 		if tab.desc then return tostring(tab.desc) end
-		if #tab.pages > 1 and tab._activePage then return tab._activePage.name end
 		return ""
 	end
 
@@ -1555,11 +1557,8 @@ function Feather:CreateWindow(opts)
 		rootScale.Scale = fit * 0.965
 		go(rootScale, 0.7, {Scale = fit})
 		go(panel, 0.5, {GroupTransparency = 0})
-		-- the two islands drift in from either side and settle
-		sideIsle.Position = UDim2.fromOffset(3 - 18, 3)
-		mainIsle.Position = UDim2.fromOffset(MAIN_X + 3 + 18, 3)
-		go(sideIsle, 0.75, {Position = UDim2.fromOffset(3, 3)})
-		go(mainIsle, 0.75, {Position = UDim2.fromOffset(MAIN_X + 3, 3)})
+		nav.Position = UDim2.fromOffset(-12, NAV_TOP)
+		go(nav, 0.8, {Position = UDim2.fromOffset(0, NAV_TOP)})
 		refreshKey()
 		Window:SetWatermark(true)
 		local t = Window._active
@@ -1569,41 +1568,80 @@ function Feather:CreateWindow(opts)
 			go(t.host, 0.7, {GroupTransparency = 0, Position = UDim2.fromOffset(0, 0)})
 		end
 	end
+	-- minimizing folds the whole menu into a little feather button. drag it anywhere, click it to get the menu back
+	local bubble = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.bg, BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(54, 54), Visible = false, ZIndex = 2, Parent = gui}, {corner(27)})
+	local bubbleStroke = stroke(Color3.fromRGB(70, 70, 78), 1)
+	bubbleStroke.Parent = bubble
+	local bubbleScale = new("UIScale", {Scale = 0.6, Parent = bubble})
+	local bubbleIcon
+	do
+		local quill = b64Asset("quill4.png", LOGO_B64)
+		if quill then
+			bubbleIcon = new("ImageLabel", {BackgroundTransparency = 1, Image = quill, ImageColor3 = Theme.text, ImageTransparency = 1, ScaleType = Enum.ScaleType.Fit, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(32, 18), Parent = bubble})
+		else
+			bubbleIcon = makeIcon(bubble, "feather", 22, Theme.text)
+			bubbleIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+			bubbleIcon.Position = UDim2.fromScale(0.5, 0.5)
+			bubbleIcon.ImageTransparency = 1
+		end
+	end
+	local function showBubble(on)
+		if on then bubble.Visible = true end
+		go(bubble, 0.3, {BackgroundTransparency = on and glass or 1})
+		go(bubbleStroke, 0.3, {Transparency = on and 0 or 1})
+		go(bubbleIcon, 0.3, {ImageTransparency = on and 0 or 1})
+		go(bubbleScale, on and 0.45 or 0.25, {Scale = on and 1 or 0.6}, on and Enum.EasingStyle.Back or nil)
+		if not on then task.delay(0.3, function() if bubble.BackgroundTransparency > 0.95 then bubble.Visible = false end end) end
+	end
+	local function showPanel(on)
+		if on then root.Visible = true end
+		go(rootScale, on and 0.4 or 0.3, {Scale = on and fit or fit * 0.94})
+		go(panel, on and 0.3 or 0.24, {GroupTransparency = on and 0 or 1})
+	end
+
 	local function setVisible(v)
 		if visible == v or not ready then return end
 		visible = v
 		closePopup()
 		setHover(nil)
-		if v then
-			root.Visible = true
-			refreshKey()
-			go(rootScale, 0.4, {Scale = fit})
-			go(panel, 0.3, {GroupTransparency = 0})
-		else
-			go(rootScale, 0.3, {Scale = fit * 0.965})
-			go(panel, 0.24, {GroupTransparency = 1})
-			task.delay(0.26, function() if not visible then root.Visible = false end end)
+		if minimized then
+			showBubble(v)
+			return
 		end
+		if v then refreshKey() end
+		showPanel(v)
+		if not v then task.delay(0.26, function() if not visible then root.Visible = false end end) end
 	end
 	local function setMinimized(v)
+		if minimized == v then return end
 		minimized = v
 		closePopup()
 		setHover(nil)
-		if not v then
-			body.Visible = true
-			nav.Visible = true
-		end
-		go(root, 0.45, {Size = UDim2.fromOffset(W, v and HEAD or H)})
-		go(headRule, 0.3, {BackgroundTransparency = v and 1 or 0.3})
 		if v then
-			task.delay(0.46, function()
-				if minimized then
-					body.Visible = false
-					nav.Visible = false
-				end
-			end)
+			-- the button turns up where the logo was sitting
+			local origin = overlay.AbsolutePosition
+			local at = headLogo.AbsolutePosition - origin + headLogo.AbsoluteSize / 2
+			bubble.Position = UDim2.fromOffset(at.X, at.Y)
+			showPanel(false)
+			task.delay(0.26, function() if minimized then root.Visible = false end end)
+			showBubble(true)
+		else
+			showBubble(false)
+			refreshKey()
+			showPanel(true)
 		end
 	end
+	-- a drag should not count as a click
+	local pressAt
+	bubble.MouseButton1Down:Connect(function() pressAt = UserInputService:GetMouseLocation() end)
+	bubble.MouseEnter:Connect(function() go(bubbleStroke, 0.15, {Color = Theme.sub}) end)
+	bubble.MouseLeave:Connect(function() go(bubbleStroke, 0.25, {Color = Color3.fromRGB(70, 70, 78)}) end)
+	bubble.MouseButton1Click:Connect(function()
+		local now = UserInputService:GetMouseLocation()
+		if pressAt and (now - pressAt).Magnitude > 6 then return end
+		setMinimized(false)
+	end)
+	makeDraggable(bubble, bubble)
 
 	-- search: type a few letters, pick a result, land on that option
 	local searchBox = new("TextButton", {Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.raised, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -86, 0.5, 0), Size = UDim2.fromOffset(150, 28), Parent = header}, {corner(9)})
@@ -2080,7 +2118,7 @@ function Feather:CreateWindow(opts)
 		if unloaded then return end
 		-- whatever happened above, end up with a clean window on screen
 		for _, child in ipairs(gui:GetChildren()) do
-			if child ~= root and child ~= overlay and child ~= mark then child:Destroy() end
+			if child ~= root and child ~= overlay and child ~= mark and child ~= bubble then child:Destroy() end
 		end
 		headWord.ImageTransparency = 0
 		headLogo.ImageTransparency = 0
